@@ -5,7 +5,7 @@ import R from "./ramda.js";
  */
 const OcaParchis = {};
 
-/* Spanish parchis terms
+/* Spanish parchís terms
 - casilla = square
 - seguro = safe
 - casa = home
@@ -74,8 +74,11 @@ OcaParchis.startingBoard = function () {
 const determineFirstPlayer = function () {
 };
 
-OcaParchis.playerNext = function () {
-
+OcaParchis.playerNext = function (lastPlayer) {
+    const currentPlayer = OcaParchis.playerList[
+        (lastPlayer + 1) % OcaParchis.playerList.length
+    ];
+    return currentPlayer;
 };
 
 
@@ -86,12 +89,10 @@ OcaParchis.playerNext = function () {
 // - if both die have same number then roll again hasta tres vezes
 // - if you roll a six roll again up to three times
 
-OcaParchis.roll = function (playerTurn) {
+OcaParchis.roll = function (playerTurn, rolls, reroll) {
     const diceResults = [];
-    let rolls = 0;
-    let reroll = true;
 
-    while (reroll && rolls < 3) {
+    if (reroll && rolls < 3) {
         rolls += 1;
         const d1 = Math.floor(Math.random() * 6) + 1;
         const d2 = Math.floor(Math.random() * 6) + 1;
@@ -102,12 +103,16 @@ OcaParchis.roll = function (playerTurn) {
         // if we've reached 3 rolls stop regardless
     }
 
-    // If player provided and all their pieces are out of home, treat 6 as 7
+    if (rolls === 3) {
+        // if we rolled 3 times last piece moved dies
+    }
+
+    // If player had all their pieces out of home, treat 6 as 7
     if (playerTurn) {
         const playerTokens = OcaParchis.tokens.filter(
-            (t) => t.player === playerTurn
+            (token) => token.player === playerTurn
         );
-        const anyAtHome = playerTokens.some((t) => t.position === "home");
+        const anyAtHome = playerTokens.some((token) => token.position === "home");
         if (!anyAtHome) {
             R.forEach(function (die, i) {
                 if (die === 6) { diceResults[i] = 7; }
@@ -115,7 +120,7 @@ OcaParchis.roll = function (playerTurn) {
         }
     }
 
-    return diceResults;
+    return [diceResults, rolls, reroll];
 };
 
 // move
@@ -131,6 +136,11 @@ const leaveHome = function (playerTurn, piece, diceResults) {
     diceResults.splice(diceResults.indexOf(5), 1); // removes first 5
 };
 
+const canMoveTo = function (playerTurn, piece, newPos) {
+    // barrier in inbetween squares
+    return true;
+};
+
 OcaParchis.move = function (playerTurn, piece, diceResults) {
     if (piece.position === "home" && diceResults.includes(5)) {
         const fives = diceResults.filter((die) => die === 5);
@@ -143,9 +153,51 @@ OcaParchis.move = function (playerTurn, piece, diceResults) {
         0
     );
 
-    piece.position += moveDistance;
-    return;
+    const newPos = piece.position + moveDistance;
+    const movePossible = canMoveTo(playerTurn, piece, newPos);
+    if (!movePossible) {
+        return piece.position; // no move
+    }
+
+    piece.position = newPos;
+    diceResults = []; // all dice used up
+    return [newPos, diceResults];
 };
+
+OcaParchis.squareEffects = function (playerTurn, piece, newPos) {
+    // oca squares
+    // eating
+    // barriers
+
+    // update piece properties based on square effects
+};
+
+
+
+OcaParchis.playersTurn = function () {
+    const currentPlayer = OcaParchis.playerNext(lastPlayer);
+
+    let rolls = 0;
+    let reroll = true;
+    while (reroll && rolls < 3) {
+        const [diceResults, updatedRolls, updatedReroll] = OcaParchis.roll(
+            currentPlayer, rolls, reroll
+        );
+        rolls = updatedRolls;
+        reroll = updatedReroll;
+
+        // choose piece to move - define piece
+        const pieceToMove = null; // TODO: implement piece selection logic
+        const [newPos, updatedDiceResults] = OcaParchis.move(currentPlayer, pieceToMove, diceResults);
+
+        OcaParchis.squareEffects(currentPlayer, pieceToMove, newPos);
+    }
+
+    const lastPlayer = currentPlayer;
+
+};
+
+
 
 OcaParchis.isVictory = function () {
     // is there any player who has all their tokens in the end zone?
