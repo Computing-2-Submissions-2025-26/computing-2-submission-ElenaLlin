@@ -5,7 +5,15 @@ import R from "./ramda.js";
  */
 const OcaParchis = {};
 
-const numeroCasillas = 68;
+/* Spanish parchis terms
+- casilla = square
+- seguro = safe
+- casa = home
+- meta = end zone
+- llegada = arrival
+*/
+
+const numCasillas = 68;
 const casillasSeguras = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68];
 const casillasCasa = [5, 22, 39, 56];
 const casillasMetaLlegada = 7;
@@ -27,6 +35,9 @@ const setSquareTypes = function (square, i) {
     }
 };
 
+const endZoneSquares = function () {
+};
+
 const createTokens = function (players) {
     R.forEach(players, function (player) {
         R.concat(
@@ -46,14 +57,15 @@ OcaParchis.startingBoard = function () {
         colour: "white",
         x: 0,
         y: 0
-    }, numeroCasillas);
+    }, numCasillas);
 
     // Note: squares are 1-based in casillas arrays, keep id consistent
     OcaParchis.boardSquares.forEach((sq, i) => setSquareTypes(sq, i));
 
     createTokens(OcaParchis.playerList);
-};
 
+    endZoneSquares();
+};
 
 
 // whos turn
@@ -114,11 +126,15 @@ OcaParchis.roll = function (playerTurn) {
 //      else can be eaten
 // - if land on square with own piece create barrera
 // - if will land on piece with any two pieces then cant move there
+const leaveHome = function (playerTurn, piece, diceResults) {
+    piece.position = casillasCasa.indexOf(playerTurn); // playerTurn = int
+    diceResults.splice(diceResults.indexOf(5), 1); // removes first 5
+};
 
 OcaParchis.move = function (playerTurn, piece, diceResults) {
     if (piece.position === "home" && diceResults.includes(5)) {
-        piece.position = casillasCasa.indexOf(playerTurn); // playerTurn = int
-        diceResults.splice(diceResults.indexOf(5), 1); // removes first 5
+        const fives = diceResults.filter((die) => die === 5);
+        fives.forEach((five) => leaveHome(playerTurn, piece, diceResults));
         return;
     }
 
@@ -131,13 +147,17 @@ OcaParchis.move = function (playerTurn, piece, diceResults) {
     return;
 };
 
-
 OcaParchis.isVictory = function () {
     // is there any player who has all their tokens in the end zone?
     return OcaParchis.playerList.some(function (p) {
-        const playerTokens = OcaParchis.tokens.filter((t) => t.player === p);
-        return playerTokens.length > 0 && playerTokens.every((t) => t.position === "end");
+        const playerTokens = OcaParchis.tokens.filter(
+            (token) => token.player === p
+        );
+        return playerTokens.length > 0 && playerTokens.every(
+            (token) => token.position === "end"
+        );
     });
 };
+
 
 export default Object.freeze(OcaParchis);
