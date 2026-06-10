@@ -9,8 +9,8 @@ const numeroCasillas = 68;
 const casillasSeguras = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68];
 const casillasCasa = [5, 22, 39, 56];
 const casillasMetaLlegada = 7;
-const players = colours.indexedBy(R.identity);
 const colours = ["yellow", "blue", "red", "green"];
+OcaParchis.playerList = [];
 OcaParchis.tokens = [];
 
 const setSquareTypes = function (square, i) {
@@ -22,7 +22,7 @@ const setSquareTypes = function (square, i) {
     }
     if (casillasCasa.includes(i)) {
         // map the home square to a player index based on order in casillasCasa
-        square.colour = Object.keys(players)[casillasCasa.indexOf(i)];
+        square.colour = Object.keys(OcaParchis.playerList)[casillasCasa.indexOf(i)];
         square.type = "home";
     }
 };
@@ -34,7 +34,7 @@ const createTokens = function (players) {
                 player: players[player],
                 position: "home"
             }, 4),
-            tokens
+            OcaParchis.tokens
         );
     });
 };
@@ -51,31 +51,30 @@ OcaParchis.startingBoard = function () {
     // Note: squares are 1-based in casillas arrays, keep id consistent
     OcaParchis.boardSquares.forEach((sq, i) => setSquareTypes(sq, i));
 
-    createTokens(players);
+    createTokens(OcaParchis.playerList);
 };
 
 
-// FUNCTIONS
 
 // whos turn
 // - on first turn everyone rolls to figure this out
+
+const determineFirstPlayer = function () {
+};
+
 OcaParchis.playerNext = function () {
 
 };
 
 
-
-
-
 // roll - always two dice
 // - if 5 and pieces in home then release piece
 // - if all pieces are out of house then 6 = seven
-// - si tiras un 6 y tienes barrera, rompes barrera
+// - if you roll a 6 and have a barrier, you break the barrier
 // - if both die have same number then roll again hasta tres vezes
-// - si tiras un seis tira otra vez hasta tres vezes
+// - if you roll a six roll again up to three times
 
-OcaParchis.roll = function (player = undefined) {
-    // player: optional colour string (e.g., 'yellow') or numeric id
+OcaParchis.roll = function (playerTurn) {
     const diceResults = [];
     let rolls = 0;
     let reroll = true;
@@ -92,10 +91,9 @@ OcaParchis.roll = function (player = undefined) {
     }
 
     // If player provided and all their pieces are out of home, treat 6 as 7
-    if (player !== undefined) {
-        const playerID = typeof player === "string" ? players[player] : player;
+    if (playerTurn) {
         const playerTokens = OcaParchis.tokens.filter(
-            (t) => t.player === playerID
+            (t) => t.player === playerTurn
         );
         const anyAtHome = playerTokens.some((t) => t.position === "home");
         if (!anyAtHome) {
@@ -135,7 +133,11 @@ OcaParchis.move = function (playerTurn, piece, diceResults) {
 
 
 OcaParchis.isVictory = function () {
-    // hay algun jugador queue tenga todas las fichas en la meta?
+    // is there any player who has all their tokens in the end zone?
+    return OcaParchis.playerList.some(function (p) {
+        const playerTokens = OcaParchis.tokens.filter((t) => t.player === p);
+        return playerTokens.length > 0 && playerTokens.every((t) => t.position === "end");
+    });
 };
 
 export default Object.freeze(OcaParchis);
