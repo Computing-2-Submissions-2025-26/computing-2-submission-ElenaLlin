@@ -16,6 +16,7 @@ const mainPathLength = 68;
 const safeSquares = [4, 11, 16, 21, 28, 33, 38, 45, 50, 55, 62, 67];
 const homePositions = [4, 21, 38, 55];
 const endZonePathLength = 7;
+
 GooseLudo.playerList = ["yellow", "blue", "red", "green"];
 GooseLudo.tokens = [];
 GooseLudo.numPlayers = 4;
@@ -175,18 +176,16 @@ const returnLastPieceToHome = function () {
 // - if you roll a six roll again up to three times
 
 GooseLudo.roll = function (playerTurn, rolls, reroll) {
-    const diceResults = [0, 0];
+    let diceResults = [0, 0];
 
     if (reroll && rolls < 3) {
         rolls += 1;
         const d1 = Math.floor(Math.random() * 6) + 1;
         const d2 = Math.floor(Math.random() * 6) + 1;
-        diceResults = [d1, d2];
-        diceTotal;
+        diceResults[0] = d1;
+        diceResults[1] = d2;
 
-        // extra roll if any die is 6 or both dice are equal (double)
         reroll = (d1 === d2) || d1 === 6 || d2 === 6;
-        // if we've reached 3 rolls stop regardless
     }
 
     if (rolls === 3 && reroll) {
@@ -221,7 +220,8 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
 // - if land on square with own piece create barrera
 // - if will land on piece with any two pieces then cant move there
 const leaveHome = function (playerTurn, piece, diceResults) {
-    piece.position = homePositions.indexOf(playerTurn); // playerTurn = int
+    const playerIndex = GooseLudo.playerList.indexOf(playerTurn);
+    piece.position = homePositions[playerIndex];
     diceResults.splice(diceResults.indexOf(5), 1); // removes first 5
 };
 
@@ -258,8 +258,8 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     GooseLudo.lastPieceMoved = piece;
 
     piece.position = newPos;
-    diceResults = [0, 0]; // all dice used up
-    return [newPos, diceResults];
+    const updatedDiceResults = [0, 0]; // all dice used up
+    return [newPos, updatedDiceResults];
 };
 
 GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
@@ -273,8 +273,8 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
 
 
 GooseLudo.playersTurn = function () {
-    const currentPlayer = GooseLudo.playerNext(lastPlayer);
-
+    const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
+    
     let rolls = 0;
     let reroll = true;
     while (reroll && rolls < 3) {
@@ -286,12 +286,14 @@ GooseLudo.playersTurn = function () {
 
         // choose piece to move - define piece
         const pieceToMove = null; // TODO: implement piece selection logic
-        const [newPos, updatedDiceResults] = GooseLudo.move(currentPlayer, pieceToMove, diceResults);
-
-        GooseLudo.squareEffects(currentPlayer, pieceToMove, newPos);
+        if (pieceToMove) {
+            const [newPos, updatedDiceResults] = GooseLudo.move(
+                currentPlayer, pieceToMove, diceResults);
+            GooseLudo.squareEffects(currentPlayer, pieceToMove, newPos);
+        }
     }
 
-    const lastPlayer = currentPlayer;
+    GooseLudo.playerNext(GooseLudo.currentPlayer);
 
 };
 
