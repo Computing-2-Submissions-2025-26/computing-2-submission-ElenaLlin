@@ -152,7 +152,9 @@ GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
  */
 
 GooseLudo.playerNext = function (currentPlayerIndex) {
-    GooseLudo.currentPlayer = (currentPlayerIndex + 1) % GooseLudo.playerList.length;
+    GooseLudo.currentPlayer = (
+        currentPlayerIndex + 1
+    ) % GooseLudo.playerList.length;
     return GooseLudo.currentPlayer;
 };
 
@@ -402,7 +404,8 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
 
     // Clear barrier state for pieces that are no longer on a barrier square
     GooseLudo.tokens.forEach((t) => {
-        const samePosTokens = GooseLudo.tokens.filter((other) => other.position === t.position);
+        const samePosTokens = GooseLudo.tokens.filter((other)
+            => other.position === t.position);
         if (samePosTokens.length < 2) {
             t.inBarrier = false;
         }

@@ -6,36 +6,36 @@ import GooseLudo from "../src/GooseLudo.js";
  * Ensures that tests are isolated and do not share
  * board, token, or player state.
  */
-beforeEach(() => {
+beforeEach(function () {
     GooseLudo.tokens = [];
     GooseLudo.currentPlayer = 0;
     GooseLudo.startingBoard(GooseLudo.playerList);
 });
 
-describe("playerNext", () => {
-    test("moves to next player", () => {
+describe("playerNext", function () {
+    test("moves to next player", function () {
         expect(GooseLudo.playerNext(0)).toBe(1);
     });
 
-    test("wraps to first player", () => {
+    test("wraps to first player", function () {
         expect(GooseLudo.playerNext(3)).toBe(0);
     });
 });
 
-describe("startingBoard", () => {
-    test("creates 16 tokens", () => {
+describe("startingBoard", function () {
+    test("creates 16 tokens", function () {
         expect(GooseLudo.tokens).toHaveLength(16);
     });
 
-    test("creates 68 track squares plus end zones", () => {
+    test("creates 68 track squares plus end zones", function () {
         expect(GooseLudo.boardSquares.length).toBe(96);
     });
 });
 
-describe("move", () => {
-    test("piece leaves home when rolling a five", () => {
+describe("move", function () {
+    test("piece leaves home when rolling a five", function () {
         const piece = GooseLudo.tokens.find(
-            t => t.player === "yellow"
+            (t) => t.player === "yellow"
         );
 
         GooseLudo.move("yellow", piece, [5, 2]);
@@ -44,9 +44,9 @@ describe("move", () => {
     });
 });
 
-test("cannot move onto opponent barrier", () => {
+test("cannot move onto opponent barrier", function () {
     const piece = GooseLudo.tokens.find(
-        t => t.player === "yellow"
+        (t) => t.player === "yellow"
     );
 
     piece.position = 1;
@@ -66,13 +66,13 @@ test("cannot move onto opponent barrier", () => {
     expect(piece.position).toBe(1);
 });
 
-test("captures opponent piece", () => {
+test("captures opponent piece", function () {
     const yellow = GooseLudo.tokens.find(
-        t => t.player === "yellow"
+        (t) => t.player === "yellow"
     );
 
     const red = GooseLudo.tokens.find(
-        t => t.player === "red"
+        (t) => t.player === "red"
     );
 
     yellow.position = 1;
@@ -83,13 +83,13 @@ test("captures opponent piece", () => {
     expect(red.position).toBe("home");
 });
 
-test("cannot capture on safe square", () => {
+test("cannot capture on safe square", function () {
     const yellow = GooseLudo.tokens.find(
-        t => t.player === "yellow"
+        (t) => t.player === "yellow"
     );
 
     const red = GooseLudo.tokens.find(
-        t => t.player === "red"
+        (t) => t.player === "red"
     );
 
     yellow.position = 1;
@@ -100,8 +100,8 @@ test("cannot capture on safe square", () => {
     expect(red.position).toBe(11);
 });
 
-describe("squareEffects", () => {
-    test("bridge teleports piece", () => {
+describe("squareEffects", function () {
+    test("bridge teleports piece", function () {
         const piece = GooseLudo.tokens[0];
 
         piece.position = 35;
@@ -116,7 +116,7 @@ describe("squareEffects", () => {
     });
 });
 
-test("dice square teleports to other dice square", () => {
+test("dice square teleports to other dice square", function () {
     const piece = GooseLudo.tokens[0];
 
     GooseLudo.squareEffects(
@@ -128,7 +128,7 @@ test("dice square teleports to other dice square", () => {
     expect(piece.position).toBe(47);
 });
 
-test("well square causes wait penalty", () => {
+test("well square causes wait penalty", function () {
     const piece = GooseLudo.tokens[0];
 
     GooseLudo.squareEffects(
@@ -141,9 +141,9 @@ test("well square causes wait penalty", () => {
 });
 
 describe("isVictory", () => {
-    test("returns true when all player tokens reach end", () => {
+    test("returns true when all player tokens reach end", function () {
         GooseLudo.tokens
-            .filter(t => t.player === "yellow")
+            .filter((t) => t.player === "yellow")
             .forEach(t => {
                 t.position = "end";
             });
