@@ -47,7 +47,8 @@ GooseLudo.tokens = [];
  * @property {number} id - The token ID (0-based indexing)
  * @property {number} x - X coordinate
  * @property {number} y - Y coordinate
- * @property {number} positionId - square or home ID (1-based indexing)
+ * @property {number || string} positionId - square or home ID (1-based index)
+ * @property {boolean} inBarrier - is this token part of a barrier
  */
 
 // board squares ids are on coordinates in the board
@@ -160,13 +161,14 @@ GooseLudo.playerNext = function (lastPlayer) {
 // - if you roll a six roll again up to three times
 
 GooseLudo.roll = function (playerTurn, rolls, reroll) {
-    const diceResults = [];
+    const diceResults = [0, 0];
 
     if (reroll && rolls < 3) {
         rolls += 1;
         const d1 = Math.floor(Math.random() * 6) + 1;
         const d2 = Math.floor(Math.random() * 6) + 1;
-        diceResults.push(d1, d2);
+        diceResults = [d1, d2];
+        diceTotal;
 
         // extra roll if any die is 6 or both dice are equal (double)
         reroll = (d1 === d2) || d1 === 6 || d2 === 6;
@@ -174,8 +176,10 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
     }
 
     if (rolls === 3) {
-        // if we rolled 3 times last piece moved dies
+        // if rolled 3 times last piece moved dies
+
         // need to store last piece moved by player
+
     }
 
     // If player had all their pieces out of home, treat 6 as 7
@@ -227,10 +231,7 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
         return;
     }
 
-    const moveDistance = diceResults.reduce(
-        (dieOne, dieTwo) => dieOne + dieTwo,
-        0
-    );
+    const moveDistance = diceResults[0] + diceResults[1];
 
     const newPos = piece.position + moveDistance;
     const movePossible = canMoveTo(playerTurn, piece, newPos);
@@ -240,8 +241,10 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
 
     checkCapture(playerTurn, piece, newPos);
 
+    GooseLudo.lastPieceMoved = piece;
+
     piece.position = newPos;
-    diceResults = []; // all dice used up
+    diceResults = [0, 0]; // all dice used up
     return [newPos, diceResults];
 };
 

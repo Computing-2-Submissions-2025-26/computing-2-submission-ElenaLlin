@@ -3,31 +3,33 @@ import GooseLudo from "./GooseLudo.js";
 
 
 const game_board = document.getElementById("game_board");
+let boardSVG = null;
+let boardReady = false;
 
 const boardCoords = {
     homePositions: {
         red: [
-            { x: 165, y: 165 },
-            { x: 225, y: 165 },
-            { x: 165, y: 225 },
+            { x: 125, y: 125 },
+            { x: 225, y: 125 },
+            { x: 125, y: 225 },
             { x: 225, y: 225 }
         ],
         yellow: [
-            { x: 945, y: 945 },
-            { x: 1005, y: 945 },
-            { x: 945, y: 1005 },
+            { x: 905, y: 905 },
+            { x: 1005, y: 905 },
+            { x: 905, y: 1005 },
             { x: 1005, y: 1005 }
         ],
         green: [
-            { x: 165, y: 945 },
-            { x: 225, y: 945 },
-            { x: 165, y: 1005 },
+            { x: 125, y: 905 },
+            { x: 225, y: 905 },
+            { x: 125, y: 1005 },
             { x: 225, y: 1005 }
         ],
         blue: [
-            { x: 945, y: 165 },
-            { x: 1005, y: 165 },
-            { x: 945, y: 225 },
+            { x: 905, y: 125 },
+            { x: 1005, y: 125 },
+            { x: 905, y: 225 },
             { x: 1005, y: 225 }
         ]
     },
@@ -157,6 +159,39 @@ const boardCoords = {
     safeSquares: GooseLudo.safeSquares
 };
 
+const tokenFiles = {
+    red: "redToken.svg",
+    yellow: "yellowToken.svg",
+    green: "greenToken.svg",
+    blue: "blueToken.svg"
+};
+
+const tokenSize = 41;
+
+const addHomeTokens = function () {
+    if (!boardSVG) return;
+
+    let tokenLayer = boardSVG.querySelector("#tokenLayer");
+    if (!tokenLayer) {
+        tokenLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        tokenLayer.setAttribute("id", "tokenLayer");
+        boardSVG.appendChild(tokenLayer);
+    }
+
+    Object.entries(boardCoords.homePositions).forEach(([colour, positions]) => {
+        positions.forEach((position, index) => {
+            const tokenImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            tokenImage.setAttribute("href", tokenFiles[colour]);
+            tokenImage.setAttribute("width", tokenSize);
+            tokenImage.setAttribute("height", tokenSize);
+            tokenImage.setAttribute("x", position.x);
+            tokenImage.setAttribute("y", position.y);
+            tokenImage.setAttribute("class", `token ${colour}`);
+            tokenImage.setAttribute("id", `token-${colour}-${index}`);
+            tokenLayer.appendChild(tokenImage);
+        });
+    });
+};
 
 
 function loadBoardSVG() {
@@ -164,22 +199,29 @@ function loadBoardSVG() {
         fetch("board.svg")
             .then(response => response.text())
             .then(svgContent => {
-                document.getElementById("boardContainer").innerHTML = svgContent;
-                boardSVG = document.getElementById("boardContainer").querySelector("svg");
+                document.getElementById("game_board").innerHTML = svgContent;
+                boardSVG = document.getElementById("game_board").querySelector("svg");
 
                 if (!boardSVG.getAttribute("viewBox")) {
-                    boardSVG.setAttribute("viewBox", "0 0 800 800");
+                    boardSVG.setAttribute("viewBox", "0 0 1172 1172");
                 }
 
+                addHomeTokens();
                 boardReady = true;
                 resolve();
             })
             .catch(error => {
                 console.error("Error loading SVG:", error);
-                document.getElementById("boardContainer").innerHTML =
-                    "<p style="color: red; ">Error loading board.svg</p>";
+                document.getElementById("game_board").innerHTML =
+                    "<p style='color: red; '>Error loading board.svg</p>";
                 reject(error);
             });
     });
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    loadBoardSVG();
+    /* initializeUI();
+    renderPieces();
+    updateUI(); */
+});
