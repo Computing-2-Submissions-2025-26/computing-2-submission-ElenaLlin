@@ -18,6 +18,9 @@ const homePositions = [4, 21, 38, 55];
 const endZonePathLength = 7;
 GooseLudo.playerList = ["yellow", "blue", "red", "green"];
 GooseLudo.tokens = [];
+GooseLudo.numPlayers = 4;
+GooseLudo.currentPlayer = 0; // 0-based indexing
+
 
 /**
  * A Board is a list of squares making the path taken by player tokens.
@@ -140,16 +143,27 @@ GooseLudo.startingBoard = function (players) {
 GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
 // whos turn
-// - on first turn everyone rolls to figure this out
-
-const determineFirstPlayer = function () {
-};
 
 GooseLudo.playerNext = function (lastPlayer) {
-    const currentPlayer = GooseLudo.playerList[
+    GooseLudo.currentPlayer = GooseLudo.playerList[
         (lastPlayer + 1) % GooseLudo.playerList.length
     ];
-    return currentPlayer;
+    return GooseLudo.currentPlayer;
+};
+
+const returnLastPieceToHome = function () {
+    const player = GooseLudo.currentPlayer;
+
+    // Find the last piece that was moved (highest position on board)
+    const maxPos = -1;
+
+    if (GooseLudo.lastPieceMoved) {
+        GooseLudo.lastPieceMoved.positionId = -1;
+        GooseLudo.log(`
+            ${player.name}
+            's last piece returned to home (3 consecutive rolls penalty)
+            `);
+    }
 };
 
 
@@ -175,11 +189,11 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
         // if we've reached 3 rolls stop regardless
     }
 
-    if (rolls === 3) {
+    if (rolls === 3 && reroll) {
         // if rolled 3 times last piece moved dies
+        returnLastPieceToHome();
 
-        // need to store last piece moved by player
-
+        diceResults = [0, 0];
     }
 
     // If player had all their pieces out of home, treat 6 as 7
