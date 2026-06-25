@@ -1,8 +1,14 @@
 import R from "./ramda.js";
 
 /**
+ * GooseLudo.js is a module to model and play a cross between 
+ * "Parchis" and "Game of the Goose"
+ * https://en.wikipedia.org/wiki/Parch%C3%ADs
+ * https://en.wikipedia.org/wiki/Game_of_the_Goose
+ * 
  * @namespace GooseLudo
  * @author Elena Llinares
+ * @version 2021/22
  */
 const GooseLudo = {};
 
@@ -10,9 +16,39 @@ const mainPathLength = 68;
 const safeSquares = [4, 11, 16, 21, 28, 33, 38, 45, 50, 55, 62, 67];
 const homePositions = [4, 21, 38, 55];
 const endZonePathLength = 7;
-const colours = ["y", "b", "r", "g"];
 GooseLudo.playerList = ["yellow", "blue", "red", "green"];
 GooseLudo.tokens = [];
+
+/**
+ * A Board is a list of squares making the path taken by player tokens.
+ * Tokens can be placed into these squares.
+ * It is implemented as an array of squares.
+ * @memberof GooseLudo
+ * @typedef {GooseLudo.Square[]} Board
+ */
+
+/**
+ * A Square is a unique position that a token can occupy.
+ * A max of two tokens can be in one square.
+ * @memberof GooseLudo
+ * @typedef {Object} Square
+ * @property {number} id - The square ID (1-based indexing)
+ * @property {number} x - X coordinate
+ * @property {number} y - Y coordinate
+ * @property {string} type - Type of square (track, safe, home, or endZone)
+ * @property {string} [colour] - Color of the square (optional)
+ */
+
+/**
+ * A Token is a players moving piece.
+ * Each player had four.
+ * @memberof GooseLudo
+ * @typedef {Object} Piece
+ * @property {number} id - The token ID (0-based indexing)
+ * @property {number} x - X coordinate
+ * @property {number} y - Y coordinate
+ * @property {number} positionId - square or home ID (1-based indexing)
+ */
 
 // board squares ids are on coordinates in the board
 const board = [
@@ -47,7 +83,7 @@ const setSquareTypes = function (sq, i) {
     }
     if (homePositions.includes(i)) {
         // map the home square to a player index based on order in homePositions
-        sq.colour = colours[homePositions.indexOf(i)];
+        sq.colour = GooseLudo.playerList[homePositions.indexOf(i)];
         sq.type = "home";
     }
 };
@@ -60,7 +96,7 @@ const endZoneSquares = function (player, i) {
     endSq.type = "endZone";
 
     // map the home square to a player index based on order in homePositions
-    endSq.colour = colours[player];
+    endSq.colour = player;
     endSq.id = endSq.colour + String(i);
 
     GooseLudo.boardSquares.push(endSq);
@@ -94,8 +130,11 @@ GooseLudo.startingBoard = function (players) {
 
     createTokens(GooseLudo.playerList);
 
-    GooseLudo.playersList.forEach((player, id) => endZoneSquares(player, id));
-
+    for (let i = 0; i < endZonePathLength; i++) {
+        GooseLudo.playerList.forEach((player, id) => endZoneSquares(player, i));
+        //const element = [index];
+    }
+    return GooseLudo.boardSquares;
 };
 GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
