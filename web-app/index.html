@@ -16,7 +16,20 @@
 </header>
 
 <aside>
-    Aside
+    <section id="game-info">
+        <h2>Game Status</h2>
+        <p><strong>Player:</strong> <span id="current-player">Yellow</span></p>
+        <p><strong>Dice:</strong> <span id="dice-result">-</span></p>
+        <p id="status-message">Press Roll to begin.</p>
+    </section>
+    <section id="controls">
+        <button id="roll-button">Roll Dice</button>
+        <button id="end-turn-button" disabled>End Turn</button>
+    </section>
+    <section id="moves">
+        <h3>Available moves</h3>
+        <ul id="available-moves"></ul>
+    </section>
 </aside>
 
 <main tabindex="-1">

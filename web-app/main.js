@@ -168,7 +168,20 @@ const tokenFiles = {
 
 const tokenSize = 41;
 
-const addHomeTokens = function () {
+const getTokenCoords = (token) => {
+    if (token.position === "home") {
+        return boardCoords.homePositions[token.player][token.id];
+    }
+    if (token.position === "end") {
+        return boardCoords.finalPath[token.player][token.id];
+    }
+    if (typeof token.position === "number" && token.position >= 1 && token.position <= boardCoords.mainPath.length) {
+        return boardCoords.mainPath[token.position - 1];
+    }
+    return { x: 0, y: 0 };
+};
+
+const createTokenElements = function () {
     if (!boardSVG) return;
 
     let tokenLayer = boardSVG.querySelector("#tokenLayer");
@@ -178,27 +191,220 @@ const addHomeTokens = function () {
         boardSVG.appendChild(tokenLayer);
     }
 
-    Object.entries(boardCoords.homePositions).forEach(([colour, positions]) => {
-        positions.forEach((position, index) => {
-            const tokenImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            tokenImage.setAttribute("href", tokenFiles[colour]);
+    GooseLudo.tokens.forEach((token) => {
+        const tokenId = `token-${token.player}-${token.id}`;
+        let tokenImage = boardSVG.querySelector(`#${tokenId}`);
+        if (!tokenImage) {
+            tokenImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            tokenImage.setAttribute("href", tokenFiles[token.player]);
             tokenImage.setAttribute("width", tokenSize);
             tokenImage.setAttribute("height", tokenSize);
-            tokenImage.setAttribute("x", position.x);
-            tokenImage.setAttribute("y", position.y);
-            tokenImage.setAttribute("class", `token ${colour}`);
-            tokenImage.setAttribute("id", `token-${colour}-${index}`);
+            tokenImage.setAttribute("class", `token ${token.player}`);
+            tokenImage.setAttribute("id", tokenId);
+            tokenImage.dataset.player = token.player;
+            tokenImage.dataset.tokenId = token.id;
+            tokenImage.addEventListener("click", tokenClicked);
             tokenLayer.appendChild(tokenImage);
-        });
+        }
     });
 };
 
+const renderPieces = function () {
+    if (!boardSVG) return;
+
+    GooseLudo.tokens.forEach((token) => {
+        const tokenImage = boardSVG.querySelector(`#token-${token.player}-${token.id}`);
+        if (!tokenImage) return;
+
+        const coords = getTokenCoords(token);
+        tokenImage.setAttribute("x", coords.x);
+        tokenImage.setAttribute("y", coords.y);
+        tokenImage.style.display = "block";
+    });
+};
+
+const rollButton = document.getElementById("roll-button");
+const endTurnButton = document.getElementById("end-turn-button");
+const currentPlayerLabel = document.getElementById("current-player");
+const diceResultLabel = document.getElementById("dice-result");
+const statusMessage = document.getElementById("status-message");
+const availableMovesList = document.getElementById("available-moves");
+
+const gameState = {
+    rolls: 0,
+    reroll: true,
+    diceResults: null,
+    currentPlayer: GooseLudo.playerList[GooseLudo.currentPlayer],
+    selectedPiece: null,
+    availableMoves: []
+};
+
+const updateCurrentPlayer = () => {
+    currentPlayerLabel.textContent = GooseLudo.playerList[GooseLudo.currentPlayer];
+};
+
+const setStatus = (text) => {
+    statusMessage.textContent = text;
+};
+
+const setDiceResult = (diceResults) => {
+    if (!diceResults) {
+        diceResultLabel.textContent = "-";
+        return;
+    }
+    diceResultLabel.textContent = diceResults.join(" + ");
+};
+
+const clearSelection = () => {
+    gameState.selectedPiece = null;
+    boardSVG.querySelectorAll(".token.selected").forEach((node) => {
+        node.classList.remove("selected");
+    });
+};
+
+const clearSelectable = () => {
+    boardSVG.querySelectorAll(".token.selectable").forEach((node) => {
+        node.classList.remove("selectable");
+    });
+};
+
+const updateAvailableMoves = () => {
+    availableMovesList.innerHTML = "";
+    gameState.availableMoves.forEach((piece) => {
+        const item = document.createElement("li");
+        item.textContent = `Piece ${piece.id} at ${piece.position}`;
+        availableMovesList.appendChild(item);
+    });
+};
+
+const highlightSelectableTokens = () => {
+    clearSelectable();
+    gameState.availableMoves.forEach((piece) => {
+        const tokenImage = boardSVG.querySelector(`#token-${piece.player}-${piece.id}`);
+        if (tokenImage) {
+            tokenImage.classList.add("selectable");
+        }
+    });
+};
+
+function tokenClicked(event) {
+    const tokenImage = event.currentTarget;
+    const player = tokenImage.dataset.player;
+    const tokenId = Number(tokenImage.dataset.tokenId);
+    const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
+
+    if (player !== currentPlayer) {
+        setStatus("Choose a piece for the current player.");
+        return;
+    }
+
+    const piece = GooseLudo.tokens.find((token) => token.player === player && token.id === tokenId);
+    if (!piece) return;
+
+    const available = gameState.availableMoves.find((token) => token.player === piece.player && token.id === piece.id);
+    if (!available) {
+        setStatus("That piece cannot move with the current dice.");
+        return;
+    }
+
+    clearSelection();
+    tokenImage.classList.add("selected");
+    gameState.selectedPiece = piece;
+    setStatus(`Selected piece ${piece.id}. Press End Turn or Roll again after move.`);
+    moveSelectedPiece(piece);
+}
+
+const endTurn = () => {
+    GooseLudo.playerNext(GooseLudo.currentPlayer);
+    gameState.rolls = 0;
+    gameState.reroll = true;
+    gameState.diceResults = null;
+    gameState.availableMoves = [];
+    gameState.selectedPiece = null;
+    updateCurrentPlayer();
+    setDiceResult(null);
+    updateAvailableMoves();
+    clearSelectable();
+    setStatus("New turn. Press Roll to begin.");
+    rollButton.disabled = false;
+    endTurnButton.disabled = true;
+    renderPieces();
+};
+
+const moveSelectedPiece = (piece) => {
+    if (!gameState.diceResults) {
+        return;
+    }
+
+    const [newPos, updatedDiceResults] = GooseLudo.move(
+        GooseLudo.playerList[GooseLudo.currentPlayer],
+        piece,
+        [...gameState.diceResults]
+    );
+
+    GooseLudo.squareEffects(GooseLudo.playerList[GooseLudo.currentPlayer], piece, newPos);
+    gameState.diceResults = updatedDiceResults;
+    clearSelection();
+    clearSelectable();
+    renderPieces();
+
+    if (GooseLudo.isVictory()) {
+        setStatus(`${GooseLudo.playerList[GooseLudo.currentPlayer]} wins!`);
+        rollButton.disabled = true;
+        endTurnButton.disabled = true;
+        return;
+    }
+
+    if (gameState.reroll && gameState.rolls < 3) {
+        setStatus("Move completed. Press Roll again for extra turn or End Turn.");
+        rollButton.disabled = false;
+        endTurnButton.disabled = false;
+    } else {
+        setStatus("Move completed. Turn ends.");
+        endTurnButton.disabled = false;
+    }
+};
+
+const handleRoll = () => {
+    const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
+    const [diceResults, rolls, reroll] = GooseLudo.roll(currentPlayer, gameState.rolls, gameState.reroll);
+
+    gameState.currentPlayer = currentPlayer;
+    gameState.diceResults = diceResults;
+    gameState.rolls = rolls;
+    gameState.reroll = reroll;
+    setDiceResult(diceResults);
+
+    const movable = GooseLudo.getMovablePieces(currentPlayer, diceResults);
+    gameState.availableMoves = movable;
+    updateAvailableMoves();
+
+    if (movable.length === 0) {
+        setStatus("No legal moves available. Turn ends.");
+        rollButton.disabled = true;
+        endTurnButton.disabled = false;
+        return;
+    }
+
+    setStatus("Select one of the highlighted pieces to move.");
+    highlightSelectableTokens();
+    rollButton.disabled = true;
+    endTurnButton.disabled = false;
+};
+
+const initializeUI = () => {
+    updateCurrentPlayer();
+    setStatus("Press Roll to begin.");
+    setDiceResult(null);
+    rollButton.addEventListener("click", handleRoll);
+    endTurnButton.addEventListener("click", endTurn);
+};
 
 function loadBoardSVG() {
     return new Promise((resolve, reject) => {
         fetch("board.svg")
-            .then(response => response.text())
-            .then(svgContent => {
+            .then((response) => response.text())
+            .then((svgContent) => {
                 document.getElementById("game_board").innerHTML = svgContent;
                 boardSVG = document.getElementById("game_board").querySelector("svg");
 
@@ -206,11 +412,12 @@ function loadBoardSVG() {
                     boardSVG.setAttribute("viewBox", "0 0 1172 1172");
                 }
 
-                addHomeTokens();
+                createTokenElements();
                 boardReady = true;
+                renderPieces();
                 resolve();
             })
-            .catch(error => {
+            .catch((error) => {
                 console.error("Error loading SVG:", error);
                 document.getElementById("game_board").innerHTML =
                     "<p style='color: red; '>Error loading board.svg</p>";
@@ -220,8 +427,7 @@ function loadBoardSVG() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadBoardSVG();
-    /* initializeUI();
-    renderPieces();
-    updateUI(); */
+    loadBoardSVG().then(() => {
+        initializeUI();
+    });
 });

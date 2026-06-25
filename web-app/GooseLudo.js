@@ -15,6 +15,9 @@ const GooseLudo = {};
 const mainPathLength = 68;
 const safeSquares = [4, 11, 16, 21, 28, 33, 38, 45, 50, 55, 62, 67];
 const homePositions = [4, 21, 38, 55];
+const bridgeSquares = [{ from: 35, to: 59 }];
+const diceSquares = [11, 47];
+const wellSquare = 23;
 const endZonePathLength = 7;
 
 GooseLudo.playerList = ["yellow", "blue", "red", "green"];
@@ -51,33 +54,11 @@ GooseLudo.currentPlayer = 0; // 0-based indexing
  * @property {number} id - The token ID (0-based indexing)
  * @property {number} x - X coordinate
  * @property {number} y - Y coordinate
- * @property {number || string} positionId - square or home ID (1-based index)
+ * @property {number || string} position - square or home ID (1-based index)
  * @property {boolean} inBarrier - is this token part of a barrier
  */
 
-// board squares ids are on coordinates in the board
-const board = [
-    [0, 0, 0, 0, 0, 0, 0, 35, 35, 34, 34, 33, 33, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 36, 36, "r0", "r0", 32, 32, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 37, 37, "r1", "r1", 31, 31, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 38, 38, "r2", "r2", 30, 30, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 39, 39, "r3", "r3", 29, 29, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 40, 40, "r4", "r4", 28, 28, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 41, 41, "r5", "r5", 27, 27, 0, 0, 0, 0, 0, 0, 0],
-    [50, 49, 48, 47, 46, 45, 44, 4342, 42, "r6", "r6", 26, 2625, 24, 23, 22, 21, 20, 19, 18],
-    [50, 49, 48, 47, 46, 45, 44, 43, "gr", "r", "r", "rb", 25, 24, 23, 22, 21, 20, 19, 18],
-    [51, "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g", "gr", "rb", "b", "b6", "b5", "b4", "b3", "b2", "b1", "b0", 17],
-    [51, "g0", "g1", "g2", "g3", "g4", "g5", "g6", "g", "gy", "yb", "b", "b6", "b5", "b4", "b3", "b2", "b1", "b0", 17],
-    [52, 53, 54, 55, 56, 57, 58, 59, "gy", "y", "y", "yb", 9, 10, 11, 12, 13, 14, 15, 16],
-    [52, 53, 54, 55, 56, 57, 58, 5960, 60, "y6", "y6", 8, 89, 10, 11, 12, 13, 14, 15, 16],
-    [0, 0, 0, 0, 0, 0, 0, 61, 61, "y5", "y5", 7, 7, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 62, 62, "y4", "y4", 6, 6, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 63, 63, "y3", "y3", 5, 5, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 64, 64, "y2", "y2", 4, 4, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 65, 65, "y1", "y1", 3, 3, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 66, 66, "y0", "y0", 2, 2, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 67, 67, 68, 68, 1, 1, 0, 0, 0, 0, 0, 0, 0]
-];
+
 
 const setSquareTypes = function (sq, i) {
     sq.id = i + 1; // 1-based indexing for squares
@@ -111,15 +92,31 @@ const endZoneSquares = function (player, i) {
 const createTokens = function (players) {
     R.forEach(function (player) {
         // create four distinct token objects for this player
-        const newTokens = Array.from({ length: 4 }, () => ({
+        const newTokens = Array.from({ length: 4 }, (_, tokenIndex) => ({
             player: player,
-            position: "home"
+            id: tokenIndex,
+            position: "home",
+            waitTurns: 0,
+            inBarrier: false
         }));
 
         // append to existing tokens
         GooseLudo.tokens = R.concat(GooseLudo.tokens || [], newTokens);
     }, players);
 };
+
+
+/**
+ * Creates and initializes the game board.
+ *
+ * Generates the main track squares, end-zone squares for all players,
+ * and creates four tokens for each player.
+ *
+ * @memberof GooseLudo
+ * @function startingBoard
+ * @param {string[]} players - List of player colours.
+ * @returns {GooseLudo.Board} The initialized board squares.
+ */
 
 GooseLudo.startingBoard = function (players) {
 
@@ -143,37 +140,50 @@ GooseLudo.startingBoard = function (players) {
 };
 GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
-// whos turn
+/**
+ * Advances play to the next player.
+ *
+ * Player order wraps around to the first player after the last.
+ *
+ * @memberof GooseLudo
+ * @function playerNext
+ * @param {number} currentPlayerIndex - Current player index.
+ * @returns {number} The next player's index.
+ */
 
-GooseLudo.playerNext = function (lastPlayer) {
-    GooseLudo.currentPlayer = GooseLudo.playerList[
-        (lastPlayer + 1) % GooseLudo.playerList.length
-    ];
+GooseLudo.playerNext = function (currentPlayerIndex) {
+    GooseLudo.currentPlayer = (currentPlayerIndex + 1) % GooseLudo.playerList.length;
     return GooseLudo.currentPlayer;
 };
 
 const returnLastPieceToHome = function () {
-    const player = GooseLudo.currentPlayer;
-
-    // Find the last piece that was moved (highest position on board)
-    const maxPos = -1;
-
     if (GooseLudo.lastPieceMoved) {
-        GooseLudo.lastPieceMoved.positionId = -1;
-        GooseLudo.log(`
-            ${player.name}
-            's last piece returned to home (3 consecutive rolls penalty)
-            `);
+        GooseLudo.lastPieceMoved.position = "home";
     }
 };
 
 
-// roll - always two dice
-// - if 5 and pieces in home then release piece
-// - if all pieces are out of house then 6 = seven
+
 // - if you roll a 6 and have a barrier, you break the barrier
-// - if both die have same number then roll again hasta tres vezes
-// - if you roll a six roll again up to three times
+
+/**
+ * Rolls two dice and determines whether a reroll is allowed.
+ *
+ * Rerolls occur when:
+ * - Both dice match.
+ * - Either die is a 6.
+ *
+ * After three consecutive rerolls, the last moved piece is returned home.
+ * If a player has no pieces at home, any rolled 6 is treated as 7.
+ *
+ * @memberof GooseLudo
+ * @function roll
+ * @param {string} playerTurn - Active player's colour.
+ * @param {number} rolls - Current roll count.
+ * @param {boolean} reroll - Whether rolling is permitted.
+ * @returns {[number[], number, boolean]}
+ * Returns dice values, updated roll count, and reroll status.
+ */
 
 GooseLudo.roll = function (playerTurn, rolls, reroll) {
     let diceResults = [0, 0];
@@ -211,14 +221,7 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
     return [diceResults, rolls, reroll];
 };
 
-// move
-// - pick piece and move
-// - if land on different players piece then send that piece back to home
-// - if land on different players piece and its safety then no eating
-// - if land on safe that piece cant be eaten
-//      else can be eaten
-// - if land on square with own piece create barrera
-// - if will land on piece with any two pieces then cant move there
+
 const leaveHome = function (playerTurn, piece, diceResults) {
     const playerIndex = GooseLudo.playerList.indexOf(playerTurn);
     piece.position = homePositions[playerIndex];
@@ -226,23 +229,104 @@ const leaveHome = function (playerTurn, piece, diceResults) {
 };
 
 const canMoveTo = function (playerTurn, piece, newPos) {
-    // barrier in inbetween squares
+    // Check if position is within valid range
+    if (newPos < 0 || newPos > mainPathLength + endZonePathLength) {
+        return false;
+    }
 
+    // Check if there's a barrier (2+ opponent pieces) at newPos
+    const tokensAtNewPos = GooseLudo.tokens.filter(
+        (t) => t.position === newPos
+    );
+
+    // If 2+ pieces at destination (barrier)
+    if (tokensAtNewPos.length >= 2) {
+        // Can only land if it's own barrier (all pieces same color)
+        const ownPieces = tokensAtNewPos.filter((t) => t.player === playerTurn);
+        if (ownPieces.length !== tokensAtNewPos.length) {
+            // Barrier belongs to opponent
+            return false;
+        }
+    }
 
     return true;
 };
 
 const movablePieces = function (playerTurn, diceResults) {
+    const moveDistance = diceResults[0] + diceResults[1];
+    const playerTokens = GooseLudo.tokens.filter((t) => t.player === playerTurn);
+
+    // Filter pieces that can move
+    return playerTokens.filter((piece) => {
+        if (piece.waitTurns > 0) {
+            return false;
+        }
+
+        // Pieces at home need a 5
+        if (piece.position === "home") {
+            return diceResults.includes(5);
+        }
+
+        // Pieces on board - check if destination is valid
+        const newPos = piece.position + moveDistance;
+        return canMoveTo(playerTurn, piece, newPos);
+    });
+};
+
+GooseLudo.getMovablePieces = function (playerTurn, diceResults) {
+    return movablePieces(playerTurn, diceResults);
 };
 
 const checkCapture = function (playerTurn, piece, newPos) {
+    // Find opponent pieces at newPos
+    const opponentPieces = GooseLudo.tokens.filter(
+        (t) => t.position === newPos && t.player !== playerTurn
+    );
+
+    // If landing on opponent piece
+    if (opponentPieces.length > 0) {
+        // Check if square is safe
+        if (safeSquares.includes(newPos)) {
+            // Safe square - can't capture
+            return;
+        }
+
+        // Check if it's a barrier (2+ opponent pieces)
+        const allTokensAtPos = GooseLudo.tokens.filter((t) => t.position === newPos);
+        if (allTokensAtPos.length >= 2) {
+            // Barrier - can't capture
+            return;
+        }
+
+        // Capture: send opponent piece back home
+        opponentPieces.forEach((oppPiece) => {
+            oppPiece.position = "home";
+        });
+    }
 };
+
+/**
+ * Moves a token according to the supplied dice values.
+ *
+ * If a token is at home and a 5 is available, it leaves home.
+ * Captures are resolved before movement is completed.
+ *
+ * @memberof GooseLudo
+ * @function move
+ * @param {string} playerTurn - Active player's colour.
+ * @param {GooseLudo.Piece} piece - Token being moved.
+ * @param {number[]} diceResults - Values available to spend.
+ * @returns {undefined|number|[number, number[]]}
+ * Returns nothing when leaving home,
+ * current position if movement is blocked,
+ * or new position and remaining dice.
+ */
 
 GooseLudo.move = function (playerTurn, piece, diceResults) {
     if (piece.position === "home" && diceResults.includes(5)) {
         const fives = diceResults.filter((die) => die === 5);
         fives.forEach((five) => leaveHome(playerTurn, piece, diceResults));
-        return;
+        return [piece.position, diceResults];
     }
 
     const moveDistance = diceResults[0] + diceResults[1];
@@ -250,7 +334,7 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     const newPos = piece.position + moveDistance;
     const movePossible = canMoveTo(playerTurn, piece, newPos);
     if (!movePossible) {
-        return piece.position; // no move
+        return [piece.position, diceResults]; // no move
     }
 
     checkCapture(playerTurn, piece, newPos);
@@ -262,19 +346,94 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     return [newPos, updatedDiceResults];
 };
 
-GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
-    // oca squares
-    // eating
-    // barriers
+/**
+ * Applies special square effects after movement.
+ *
+ * Handles:
+ * - Bridge teleportation
+ * - Dice-square teleportation
+ * - Well penalties
+ * - Barrier creation/removal
+ * - End-zone entry
+ *
+ * @memberof GooseLudo
+ * @function squareEffects
+ * @param {string} playerTurn - Active player's colour.
+ * @param {GooseLudo.Piece} piece - Token affected.
+ * @param {number} newPos - Position reached after movement.
+ * @returns {void}
+ */
 
-    // update piece properties based on square effects
+GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
+    // Bridge squares: instant teleport from first bridge to second bridge
+    const bridge = bridgeSquares.find((b) => b.from === newPos);
+    if (bridge) {
+        piece.position = bridge.to;
+        checkCapture(playerTurn, piece, bridge.to);
+        newPos = bridge.to;
+    }
+
+    // Dice squares: go to the other dice square
+    if (diceSquares.includes(newPos)) {
+        const otherDiceSquare = diceSquares.find((sq) => sq !== newPos);
+        if (otherDiceSquare !== undefined) {
+            piece.position = otherDiceSquare;
+            checkCapture(playerTurn, piece, otherDiceSquare);
+            newPos = otherDiceSquare;
+        }
+    }
+
+    // Well square: piece can't move for two turns
+    if (newPos === wellSquare) {
+        piece.waitTurns = 2;
+    }
+
+    // Check if creating a barrier (landing on own piece)
+    const tokensAtPos = GooseLudo.tokens.filter(
+        (t) => t.position === newPos && t.player === playerTurn
+    );
+
+    if (tokensAtPos.length >= 2) {
+        // Barrier created - mark pieces as in barrier
+        tokensAtPos.forEach((t) => {
+            t.inBarrier = true;
+        });
+    }
+
+    // Clear barrier state for pieces that are no longer on a barrier square
+    GooseLudo.tokens.forEach((t) => {
+        const samePosTokens = GooseLudo.tokens.filter((other) => other.position === t.position);
+        if (samePosTokens.length < 2) {
+            t.inBarrier = false;
+        }
+    });
+
+    // Check if moved into end zone and handle transition
+    if (newPos > mainPathLength) {
+        piece.position = "end";
+    }
 };
 
-
+/**
+ * Executes a complete player turn.
+ *
+ * Decrements waiting penalties, performs dice rolls,
+ * processes rerolls, and attempts token movement.
+ *
+ * @memberof GooseLudo
+ * @function playersTurn
+ * @returns {void}
+ */
 
 GooseLudo.playersTurn = function () {
     const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
-    
+
+    GooseLudo.tokens.forEach((piece) => {
+        if (piece.player === currentPlayer && piece.waitTurns > 0) {
+            piece.waitTurns -= 1;
+        }
+    });
+
     let rolls = 0;
     let reroll = true;
     while (reroll && rolls < 3) {
@@ -294,10 +453,17 @@ GooseLudo.playersTurn = function () {
     }
 
     GooseLudo.playerNext(GooseLudo.currentPlayer);
-
 };
 
-
+/**
+ * Determines whether any player has won the game.
+ *
+ * A player wins when all of their tokens have reached the end zone.
+ *
+ * @memberof GooseLudo
+ * @function isVictory
+ * @returns {boolean} True if a player has won.
+ */
 
 GooseLudo.isVictory = function () {
     // is there any player who has all their tokens in the end zone?
