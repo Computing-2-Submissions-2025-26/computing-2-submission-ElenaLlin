@@ -1,0 +1,72 @@
+:root
+{
+    --aside-width: 230px;
+    --header-font-size: 32pt;
+    --header-height: 64px;
+    --header-padding: 0.25em;
+    --column-count: 20;
+    --row-count: 20;
+}
+
+* { 
+    box-sizing: border-box;
+}
+
+body 
+{
+    background-color: white;
+}
+
+header{
+    background-color: gainsboro; 
+    font-size: var(--header-font-size);
+    font-weight: bold;
+    height: var(--header-height);
+    left: 0px;
+    padding-top: var(--header-padding);
+    position: absolute;
+    text-align: center;
+    top: 0px;
+    width: 100%;
+}
+
+aside {
+    background-color: lightblue;
+    width: var(--aside-width);
+    right: 0px;
+    top: var(--header-height);
+    height: calc(100% - var(--header-height));
+    position: absolute;
+    text-align: center;
+}
+
+main {
+    background-color: black;
+    right: var(--aside-width);
+    height: calc(100% - var(--header-height));
+    top: var(--header-height);
+    width: calc(100% - var(--aside-width));
+    position: absolute;
+    text-align: center;
+}
+
+#game_board
+{
+    background-color: blue;
+    aspect-ratio: var(--column-count) / var(--row-count);
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    max-height: 100%;
+    max-width: 100%;
+    position: relative;
+}
+
+td {
+    background-color: white;
+    color: green;
+    border: 1px solid black;
+    width: calc(100% / var(--column-count));
+    text-align: center;
+}
+
