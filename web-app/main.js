@@ -152,7 +152,7 @@ const boardCoords = {
             { x: 920, y: 590 },
             { x: 980, y: 590 },
             { x: 1040, y: 590 },
-            { x: 1100, y: 590 },
+            { x: 1100, y: 590 }
         ]
     },
 
@@ -168,34 +168,37 @@ const tokenFiles = {
 
 const tokenSize = 41;
 
-const getTokenCoords = (token) => {
+const getTokenCoords = function (token) {
     if (token.position === "home") {
         return boardCoords.homePositions[token.player][token.id];
     }
     if (token.position === "end") {
         return boardCoords.finalPath[token.player][token.id];
     }
-    if (typeof token.position === "number" && token.position >= 1 && token.position <= boardCoords.mainPath.length) {
+    if (typeof token.position === "number" && token.position >= 1 &&
+        token.position <= boardCoords.mainPath.length) {
         return boardCoords.mainPath[token.position - 1];
     }
     return { x: 0, y: 0 };
 };
 
 const createTokenElements = function () {
-    if (!boardSVG) return;
+    if (!boardSVG) { return; }
 
     let tokenLayer = boardSVG.querySelector("#tokenLayer");
     if (!tokenLayer) {
-        tokenLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        tokenLayer = document.createElementNS(
+            "http://www.w3.org/2000/svg", "g");
         tokenLayer.setAttribute("id", "tokenLayer");
         boardSVG.appendChild(tokenLayer);
     }
 
-    GooseLudo.tokens.forEach((token) => {
+    GooseLudo.state.tokens.forEach((token) => {
         const tokenId = `token-${token.player}-${token.id}`;
         let tokenImage = boardSVG.querySelector(`#${tokenId}`);
         if (!tokenImage) {
-            tokenImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            tokenImage = document.createElementNS(
+                "http://www.w3.org/2000/svg", "image");
             tokenImage.setAttribute("href", tokenFiles[token.player]);
             tokenImage.setAttribute("width", tokenSize);
             tokenImage.setAttribute("height", tokenSize);
@@ -210,10 +213,12 @@ const createTokenElements = function () {
 };
 
 const renderPieces = function () {
-    if (!boardSVG) return;
+    if (!boardSVG) { return; }
 
-    GooseLudo.tokens.forEach((token) => {
-        const tokenImage = boardSVG.querySelector(`#token-${token.player}-${token.id}`);
+    GooseLudo.state.tokens.forEach((token) => {
+        const tokenImage = boardSVG.querySelector(
+            `#token-${token.player}-${token.id}`
+        );
         if (!tokenImage) return;
 
         const coords = getTokenCoords(token);
@@ -234,13 +239,15 @@ const gameState = {
     rolls: 0,
     reroll: true,
     diceResults: null,
-    currentPlayer: GooseLudo.playerList[GooseLudo.currentPlayer],
+    currentPlayer: GooseLudo.playerList[GooseLudo.state.currentPlayer],
     selectedPiece: null,
     availableMoves: []
 };
 
 const updateCurrentPlayer = () => {
-    currentPlayerLabel.textContent = GooseLudo.playerList[GooseLudo.currentPlayer];
+    currentPlayerLabel.textContent = GooseLudo.playerList[
+        GooseLudo.state.currentPlayer
+    ];
 };
 
 const setStatus = (text) => {
@@ -280,7 +287,9 @@ const updateAvailableMoves = () => {
 const highlightSelectableTokens = () => {
     clearSelectable();
     gameState.availableMoves.forEach((piece) => {
-        const tokenImage = boardSVG.querySelector(`#token-${piece.player}-${piece.id}`);
+        const tokenImage = boardSVG.querySelector(
+            `#token-${piece.player}-${piece.id}`
+        );
         if (tokenImage) {
             tokenImage.classList.add("selectable");
         }
@@ -291,17 +300,21 @@ function tokenClicked(event) {
     const tokenImage = event.currentTarget;
     const player = tokenImage.dataset.player;
     const tokenId = Number(tokenImage.dataset.tokenId);
-    const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
+    const currentPlayer = GooseLudo.playerList[GooseLudo.state.currentPlayer];
 
     if (player !== currentPlayer) {
         setStatus("Choose a piece for the current player.");
         return;
     }
 
-    const piece = GooseLudo.tokens.find((token) => token.player === player && token.id === tokenId);
+    const piece = GooseLudo.state.tokens.find(
+        (token) => token.player === player && token.id === tokenId
+    );
     if (!piece) return;
 
-    const available = gameState.availableMoves.find((token) => token.player === piece.player && token.id === piece.id);
+    const available = gameState.availableMoves.find(
+        (token) => token.player === piece.player && token.id === piece.id
+    );
     if (!available) {
         setStatus("That piece cannot move with the current dice.");
         return;
@@ -310,12 +323,13 @@ function tokenClicked(event) {
     clearSelection();
     tokenImage.classList.add("selected");
     gameState.selectedPiece = piece;
-    setStatus(`Selected piece ${piece.id}. Press End Turn or Roll again after move.`);
+    setStatus(`Selected piece ${piece.id
+        }. Press End Turn or Roll again after move.`);
     moveSelectedPiece(piece);
 }
 
 const endTurn = () => {
-    GooseLudo.playerNext(GooseLudo.currentPlayer);
+    GooseLudo.playerNext(GooseLudo.state.currentPlayer);
     gameState.rolls = 0;
     gameState.reroll = true;
     gameState.diceResults = null;
@@ -337,26 +351,32 @@ const moveSelectedPiece = (piece) => {
     }
 
     const [newPos, updatedDiceResults] = GooseLudo.move(
-        GooseLudo.playerList[GooseLudo.currentPlayer],
+        GooseLudo.playerList[GooseLudo.state.currentPlayer],
         piece,
         [...gameState.diceResults]
     );
 
-    GooseLudo.squareEffects(GooseLudo.playerList[GooseLudo.currentPlayer], piece, newPos);
+    GooseLudo.squareEffects(GooseLudo.playerList[
+        GooseLudo.state.currentPlayer
+    ], piece, newPos);
     gameState.diceResults = updatedDiceResults;
     clearSelection();
     clearSelectable();
     renderPieces();
 
     if (GooseLudo.isVictory()) {
-        setStatus(`${GooseLudo.playerList[GooseLudo.currentPlayer]} wins!`);
+        setStatus(`${GooseLudo.playerList[
+            GooseLudo.state.currentPlayer
+        ]} wins!`);
         rollButton.disabled = true;
         endTurnButton.disabled = true;
         return;
     }
 
     if (gameState.reroll && gameState.rolls < 3) {
-        setStatus("Move completed. Press Roll again for extra turn or End Turn.");
+        setStatus(
+            "Move completed. Press Roll again for extra turn or End Turn."
+        );
         rollButton.disabled = false;
         endTurnButton.disabled = false;
     } else {
@@ -366,8 +386,10 @@ const moveSelectedPiece = (piece) => {
 };
 
 const handleRoll = () => {
-    const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
-    const [diceResults, rolls, reroll] = GooseLudo.roll(currentPlayer, gameState.rolls, gameState.reroll);
+    const currentPlayer = GooseLudo.playerList[GooseLudo.state.currentPlayer];
+    const [diceResults, rolls, reroll] = GooseLudo.roll(
+        currentPlayer, gameState.rolls, gameState.reroll
+    );
 
     gameState.currentPlayer = currentPlayer;
     gameState.diceResults = diceResults;
@@ -406,7 +428,8 @@ function loadBoardSVG() {
             .then((response) => response.text())
             .then((svgContent) => {
                 document.getElementById("game_board").innerHTML = svgContent;
-                boardSVG = document.getElementById("game_board").querySelector("svg");
+                boardSVG = document.getElementById("game_board").querySelector(
+                    "svg");
 
                 if (!boardSVG.getAttribute("viewBox")) {
                     boardSVG.setAttribute("viewBox", "0 0 1172 1172");

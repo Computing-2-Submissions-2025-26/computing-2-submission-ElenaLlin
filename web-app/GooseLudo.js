@@ -1,11 +1,11 @@
 import R from "./ramda.js";
 
 /**
- * GooseLudo.js is a module to model and play a cross between 
+ * GooseLudo.js is a module to model and play a cross between
  * "Parchis" and "Game of the Goose"
  * https://en.wikipedia.org/wiki/Parch%C3%ADs
  * https://en.wikipedia.org/wiki/Game_of_the_Goose
- * 
+ *
  * @namespace GooseLudo
  * @author Elena Llinares
  * @version 2021/22
@@ -20,10 +20,15 @@ const diceSquares = [11, 47];
 const wellSquare = 23;
 const endZonePathLength = 7;
 
+GooseLudo.state = {
+    tokens: [],
+    currentPlayer: 0,  // 0-based indexing
+    boardSquares: [],
+    lastPieceMoved: null
+};
+
 GooseLudo.playerList = ["yellow", "blue", "red", "green"];
-GooseLudo.tokens = [];
 GooseLudo.numPlayers = 4;
-GooseLudo.currentPlayer = 0; // 0-based indexing
 
 
 /**
@@ -85,7 +90,7 @@ const endZoneSquares = function (player, i) {
     endSq.colour = player;
     endSq.id = endSq.colour + String(i);
 
-    GooseLudo.boardSquares.push(endSq);
+    GooseLudo.state.boardSquares.push(endSq);
 
 };
 
@@ -101,7 +106,9 @@ const createTokens = function (players) {
         }));
 
         // append to existing tokens
-        GooseLudo.tokens = R.concat(GooseLudo.tokens || [], newTokens);
+        GooseLudo.state.tokens = R.concat(
+            GooseLudo.state.tokens || [], newTokens
+        );
     }, players);
 };
 
@@ -120,7 +127,9 @@ const createTokens = function (players) {
 
 GooseLudo.startingBoard = function (players) {
 
-    GooseLudo.boardSquares = Array.from({ length: mainPathLength }, () => ({
+    GooseLudo.state.boardSquares = Array.from({
+        length: mainPathLength
+    }, () => ({
         id: 0,
         type: "track",
         colour: "white",
@@ -128,7 +137,7 @@ GooseLudo.startingBoard = function (players) {
         y: 0
     }));
 
-    GooseLudo.boardSquares.forEach((sq, i) => setSquareTypes(sq, i));
+    GooseLudo.state.boardSquares.forEach((sq, i) => setSquareTypes(sq, i));
 
     createTokens(GooseLudo.playerList);
 
@@ -136,7 +145,7 @@ GooseLudo.startingBoard = function (players) {
         GooseLudo.playerList.forEach((player, id) => endZoneSquares(player, i));
         //const element = [index];
     }
-    return GooseLudo.boardSquares;
+    return GooseLudo.state.boardSquares;
 };
 GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
@@ -152,15 +161,15 @@ GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
  */
 
 GooseLudo.playerNext = function (currentPlayerIndex) {
-    GooseLudo.currentPlayer = (
+    GooseLudo.state.currentPlayer = (
         currentPlayerIndex + 1
     ) % GooseLudo.playerList.length;
-    return GooseLudo.currentPlayer;
+    return GooseLudo.state.currentPlayer;
 };
 
 const returnLastPieceToHome = function () {
-    if (GooseLudo.lastPieceMoved) {
-        GooseLudo.lastPieceMoved.position = "home";
+    if (GooseLudo.state.lastPieceMoved) {
+        GooseLudo.state.lastPieceMoved.position = "home";
     }
 };
 
@@ -209,10 +218,12 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
 
     // If player had all their pieces out of home, treat 6 as 7
     if (playerTurn) {
-        const playerTokens = GooseLudo.tokens.filter(
+        const playerTokens = GooseLudo.state.tokens.filter(
             (token) => token.player === playerTurn
         );
-        const anyAtHome = playerTokens.some((token) => token.position === "home");
+        const anyAtHome = playerTokens.some(
+            (token) => token.position === "home"
+        );
         if (!anyAtHome) {
             R.forEach(function (die, i) {
                 if (die === 6) { diceResults[i] = 7; }
@@ -237,7 +248,7 @@ const canMoveTo = function (playerTurn, piece, newPos) {
     }
 
     // Check if there's a barrier (2+ opponent pieces) at newPos
-    const tokensAtNewPos = GooseLudo.tokens.filter(
+    const tokensAtNewPos = GooseLudo.state.tokens.filter(
         (t) => t.position === newPos
     );
 
@@ -256,7 +267,9 @@ const canMoveTo = function (playerTurn, piece, newPos) {
 
 const movablePieces = function (playerTurn, diceResults) {
     const moveDistance = diceResults[0] + diceResults[1];
-    const playerTokens = GooseLudo.tokens.filter((t) => t.player === playerTurn);
+    const playerTokens = GooseLudo.state.tokens.filter(
+        (t) => t.player === playerTurn
+    );
 
     // Filter pieces that can move
     return playerTokens.filter((piece) => {
@@ -281,7 +294,7 @@ GooseLudo.getMovablePieces = function (playerTurn, diceResults) {
 
 const checkCapture = function (playerTurn, piece, newPos) {
     // Find opponent pieces at newPos
-    const opponentPieces = GooseLudo.tokens.filter(
+    const opponentPieces = GooseLudo.state.tokens.filter(
         (t) => t.position === newPos && t.player !== playerTurn
     );
 
@@ -294,7 +307,9 @@ const checkCapture = function (playerTurn, piece, newPos) {
         }
 
         // Check if it's a barrier (2+ opponent pieces)
-        const allTokensAtPos = GooseLudo.tokens.filter((t) => t.position === newPos);
+        const allTokensAtPos = GooseLudo.state.tokens.filter(
+            (t) => t.position === newPos
+        );
         if (allTokensAtPos.length >= 2) {
             // Barrier - can't capture
             return;
@@ -341,7 +356,7 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
 
     checkCapture(playerTurn, piece, newPos);
 
-    GooseLudo.lastPieceMoved = piece;
+    GooseLudo.state.lastPieceMoved = piece;
 
     piece.position = newPos;
     const updatedDiceResults = [0, 0]; // all dice used up
@@ -391,7 +406,7 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
     }
 
     // Check if creating a barrier (landing on own piece)
-    const tokensAtPos = GooseLudo.tokens.filter(
+    const tokensAtPos = GooseLudo.state.tokens.filter(
         (t) => t.position === newPos && t.player === playerTurn
     );
 
@@ -403,9 +418,9 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
     }
 
     // Clear barrier state for pieces that are no longer on a barrier square
-    GooseLudo.tokens.forEach((t) => {
-        const samePosTokens = GooseLudo.tokens.filter((other)
-            => other.position === t.position);
+    GooseLudo.state.tokens.forEach((t) => {
+        const samePosTokens = GooseLudo.state.tokens.filter((other) =>
+            other.position === t.position);
         if (samePosTokens.length < 2) {
             t.inBarrier = false;
         }
@@ -429,9 +444,9 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
  */
 
 GooseLudo.playersTurn = function () {
-    const currentPlayer = GooseLudo.playerList[GooseLudo.currentPlayer];
+    const currentPlayer = GooseLudo.playerList[GooseLudo.state.currentPlayer];
 
-    GooseLudo.tokens.forEach((piece) => {
+    GooseLudo.state.tokens.forEach((piece) => {
         if (piece.player === currentPlayer && piece.waitTurns > 0) {
             piece.waitTurns -= 1;
         }
@@ -455,7 +470,7 @@ GooseLudo.playersTurn = function () {
         }
     }
 
-    GooseLudo.playerNext(GooseLudo.currentPlayer);
+    GooseLudo.playerNext(GooseLudo.state.currentPlayer);
 };
 
 /**
@@ -471,7 +486,7 @@ GooseLudo.playersTurn = function () {
 GooseLudo.isVictory = function () {
     // is there any player who has all their tokens in the end zone?
     return GooseLudo.playerList.some(function (p) {
-        const playerTokens = GooseLudo.tokens.filter(
+        const playerTokens = GooseLudo.state.tokens.filter(
             (token) => token.player === p
         );
         return playerTokens.length > 0 && playerTokens.every(
