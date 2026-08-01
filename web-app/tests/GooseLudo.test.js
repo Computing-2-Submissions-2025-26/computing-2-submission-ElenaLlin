@@ -57,7 +57,7 @@ describe("move", function () {
 
         GooseLudo.move("yellow", piece, [5, 2]);
 
-        assert.strictEqual(piece.position, 4);
+        assert.strictEqual(piece.position, 5);
     });
 
     it("cannot move onto opponent barrier", function () {
@@ -78,7 +78,7 @@ describe("move", function () {
             [2, 2]
         );
 
-        assert.strictEqual(result, 1);
+        assert.strictEqual(result[0], 1);
         assert.strictEqual(piece.position, 1);
     });
 
@@ -91,8 +91,8 @@ describe("move", function () {
             (t) => t.player === "red"
         );
 
-        yellow.position = 1;
-        red.position = 5;
+        yellow.position = 2;
+        red.position = 6;
 
         GooseLudo.move("yellow", yellow, [2, 2]);
 
@@ -109,11 +109,11 @@ describe("move", function () {
         );
 
         yellow.position = 1;
-        red.position = 11;
+        red.position = 12;
 
         GooseLudo.move("yellow", yellow, [5, 5]);
 
-        assert.strictEqual(red.position, 11);
+        assert.strictEqual(red.position, 12);
     });
 });
 /**
@@ -126,15 +126,15 @@ describe("squareEffects", function () {
     it("bridge teleports piece", function () {
         const piece = GooseLudo.state.tokens[0];
 
-        piece.position = 35;
+        piece.position = 36;
 
         GooseLudo.squareEffects(
             "yellow",
             piece,
-            35
+            36
         );
 
-        assert.strictEqual(piece.position, 59);
+        assert.strictEqual(piece.position, 60);
     });
 
     it("dice square teleports to other dice square", function () {
@@ -143,10 +143,10 @@ describe("squareEffects", function () {
         GooseLudo.squareEffects(
             "yellow",
             piece,
-            11
+            12
         );
 
-        assert.strictEqual(piece.position, 47);
+        assert.strictEqual(piece.position, 48);
     });
 
     it("well square causes wait penalty", function () {
