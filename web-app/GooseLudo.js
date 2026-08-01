@@ -13,11 +13,11 @@ import R from "./ramda.js";
 const GooseLudo = {};
 
 const mainPathLength = 68;
-const safeSquares = [4, 11, 16, 21, 28, 33, 38, 45, 50, 55, 62, 67];
+const safeSquares = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68];
 const homePositions = [5, 22, 39, 56];
-const bridgeSquares = [{ from: 35, to: 59 }];
-const diceSquares = [11, 47];
-const wellSquare = 23;
+const bridgeSquares = [{ from: 36, to: 60 }];
+const diceSquares = [12, 48];
+const wellSquare = 24;
 const endZonePathLength = 7;
 
 GooseLudo.state = {
