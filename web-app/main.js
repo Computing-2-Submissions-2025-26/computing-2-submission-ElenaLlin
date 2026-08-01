@@ -32,27 +32,27 @@ const boardCoords = {
             { x: 905, y: 225 },
             { x: 1005, y: 225 }
         ]
-    },
+    }, // hundred by a hundred px
 
-    mainPath: [
-        { x: 720, y: 1160 },
-        { x: 720, y: 1100 },
-        { x: 720, y: 1040 },
-        { x: 720, y: 980 },
-        { x: 720, y: 920 },
-        { x: 720, y: 860 },
-        { x: 720, y: 800 },
-        { x: 720, y: 740 },
+    mainPath: [ // -thirty wide -twenty high
+        { x: 690, y: 1140 }, // one
+        { x: 690, y: 1080 },
+        { x: 690, y: 1020 },
+        { x: 690, y: 960 },
+        { x: 690, y: 900 },
+        { x: 690, y: 840 },
+        { x: 690, y: 780 },
+        { x: 690, y: 720 },
 
-        { x: 740, y: 720 },
-        { x: 800, y: 720 },
-        { x: 860, y: 720 },
-        { x: 920, y: 720 },
-        { x: 980, y: 720 },
-        { x: 1040, y: 720 },
-        { x: 1100, y: 720 },
+        { x: 720, y: 690 },
+        { x: 780, y: 690 },
+        { x: 840, y: 690 },
+        { x: 900, y: 690 },
+        { x: 960, y: 690 },
+        { x: 1020, y: 690 },
+        { x: 1080, y: 690 },
+        { x: 1140, y: 690 },
 
-        { x: 1160, y: 720 },
         { x: 1160, y: 580 },
 
         { x: 1160, y: 460 },
@@ -167,6 +167,50 @@ const tokenFiles = {
 };
 
 const tokenSize = 41;
+
+
+const boardDotRadius = 6;
+
+const createBoardDotElements = function () {
+    if (!boardSVG) { return; }
+
+    let dotLayer = boardSVG.querySelector("#dotLayer");
+    if (!dotLayer) {
+        dotLayer = document.createElementNS(
+            "http://www.w3.org/2000/svg", "g");
+        dotLayer.setAttribute("id", "dotLayer");
+        boardSVG.appendChild(dotLayer);
+    }
+
+    const allBoardCoords = [];
+    Object.values(boardCoords.homePositions).forEach((positions) => {
+        allBoardCoords.push(...positions);
+    });
+    allBoardCoords.push(...boardCoords.mainPath);
+    Object.values(boardCoords.finalPath).forEach((positions) => {
+        allBoardCoords.push(...positions);
+    });
+
+    allBoardCoords.forEach((coords, index) => {
+        const dotId = `board-dot-${index}`;
+        let dot = dotLayer.querySelector(`#${dotId}`);
+        if (!dot) {
+            dot = document.createElementNS(
+                "http://www.w3.org/2000/svg", "circle");
+            dot.setAttribute("id", dotId);
+            dot.setAttribute("class", "board-dot");
+            dot.setAttribute("r", boardDotRadius);
+            dot.setAttribute("fill", "#ffffff");
+            dot.setAttribute("stroke", "#2f2f2f");
+            dot.setAttribute("stroke-width", "2");
+            dotLayer.appendChild(dot);
+        }
+        dot.setAttribute("cx", coords.x);
+        dot.setAttribute("cy", coords.y);
+    });
+};
+
+
 
 const getTokenCoords = function (token) {
     if (token.position === "home") {
@@ -375,10 +419,10 @@ const moveSelectedPiece = (piece) => {
 
     if (gameState.reroll && gameState.rolls < 3) {
         setStatus(
-            "Move completed. Press Roll again for extra turn or End Turn."
+            "Move completed. Press Roll again for extra turn."
         );
         rollButton.disabled = false;
-        endTurnButton.disabled = false;
+        endTurnButton.disabled = true;
     } else {
         setStatus("Move completed. Turn ends.");
         endTurnButton.disabled = false;
@@ -435,6 +479,7 @@ function loadBoardSVG() {
                     boardSVG.setAttribute("viewBox", "0 0 1172 1172");
                 }
 
+                createBoardDotElements();
                 createTokenElements();
                 boardReady = true;
                 renderPieces();

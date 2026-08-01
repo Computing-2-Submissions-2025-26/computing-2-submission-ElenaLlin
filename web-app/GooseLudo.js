@@ -14,7 +14,7 @@ const GooseLudo = {};
 
 const mainPathLength = 68;
 const safeSquares = [4, 11, 16, 21, 28, 33, 38, 45, 50, 55, 62, 67];
-const homePositions = [4, 21, 38, 55];
+const homePositions = [5, 22, 39, 56];
 const bridgeSquares = [{ from: 35, to: 59 }];
 const diceSquares = [11, 47];
 const wellSquare = 23;
@@ -63,8 +63,6 @@ GooseLudo.numPlayers = 4;
  * @property {boolean} inBarrier - is this token part of a barrier
  */
 
-
-
 const setSquareTypes = function (sq, i) {
     sq.id = i + 1; // 1-based indexing for squares
     sq.x = 0;
@@ -102,7 +100,9 @@ const createTokens = function (players) {
             id: tokenIndex,
             position: "home",
             waitTurns: 0,
-            inBarrier: false
+            inBarrier: false,
+            x: 0,
+            y: 0
         }));
 
         // append to existing tokens
@@ -238,12 +238,12 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
 const leaveHome = function (playerTurn, piece, diceResults) {
     const playerIndex = GooseLudo.playerList.indexOf(playerTurn);
     piece.position = homePositions[playerIndex];
-    diceResults.splice(diceResults.indexOf(5), 1); // removes first 5
+    diceResults.splice(diceResults.indexOf(5), 1, 0); // removes first 5
 };
 
 const canMoveTo = function (playerTurn, piece, newPos) {
     // Check if position is within valid range
-    if (newPos < 0 || newPos > mainPathLength + endZonePathLength) {
+    if (newPos < 1 || newPos > mainPathLength + endZonePathLength) {
         return false;
     }
 
@@ -348,6 +348,11 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
 
     const moveDistance = diceResults[0] + diceResults[1];
 
+    if (piece.position === "home") {
+        // Can't move if at home and no 5 rolled
+        return [piece.position, diceResults];
+    }
+
     const newPos = piece.position + moveDistance;
     const movePossible = canMoveTo(playerTurn, piece, newPos);
     if (!movePossible) {
@@ -359,6 +364,7 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     GooseLudo.state.lastPieceMoved = piece;
 
     piece.position = newPos;
+
     const updatedDiceResults = [0, 0]; // all dice used up
     return [newPos, updatedDiceResults];
 };
@@ -426,7 +432,7 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
         }
     });
 
-    // Check if moved into end zone and handle transition
+    // Check if moved into end zone and handle transition - edit
     if (newPos > mainPathLength) {
         piece.position = "end";
     }
@@ -494,6 +500,7 @@ GooseLudo.isVictory = function () {
         );
     });
 };
+
 
 
 export default Object.freeze(GooseLudo);
