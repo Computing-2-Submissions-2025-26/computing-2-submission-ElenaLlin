@@ -12,13 +12,15 @@ import R from "./ramda.js";
  */
 const GooseLudo = {};
 
+const colourPathLengths = [68, 17, 34, 51];
 const mainPathLength = 68;
 const safeSquares = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68];
 const homePositions = [5, 22, 39, 56];
 const bridgeSquares = [{ from: 36, to: 60 }];
 const diceSquares = [12, 48];
 const wellSquare = 24;
-const endZonePathLength = 7;
+const endZonePathLength = 8;
+GooseLudo.endZoneIds = [];
 
 GooseLudo.state = {
     tokens: [],
@@ -57,8 +59,7 @@ GooseLudo.numPlayers = 4;
  * @memberof GooseLudo
  * @typedef {Object} Piece
  * @property {number} id - The token ID (0-based indexing)
- * @property {number} x - X coordinate
- * @property {number} y - Y coordinate
+
  * @property {number || string} position - square or home ID (1-based index)
  * @property {boolean} inBarrier - is this token part of a barrier
  */
@@ -88,6 +89,7 @@ const endZoneSquares = function (player, i) {
     endSq.colour = player;
     endSq.id = endSq.colour + String(i);
 
+    GooseLudo.endZoneIds.push(endSq.id);
     GooseLudo.state.boardSquares.push(endSq);
 
 };
@@ -100,9 +102,7 @@ const createTokens = function (players) {
             id: tokenIndex,
             position: "home",
             waitTurns: 0,
-            inBarrier: false,
-            x: 0,
-            y: 0
+            inBarrier: false
         }));
 
         // append to existing tokens
@@ -243,9 +243,21 @@ const leaveHome = function (playerTurn, piece, diceResults) {
 
 const canMoveTo = function (playerTurn, piece, newPos) {
     // Check if position is within valid range
-    if (newPos < 1 || newPos > mainPathLength + endZonePathLength) {
+    if (newPos < 1) {
         return false;
     }
+
+    // Check if moved into end zone and handle transition - edit
+    if (newPos > colourPathLengths[GooseLudo.state.currentPlayer]) {
+        const diff = String(newPos - colourPathLengths[
+            GooseLudo.state.currentPlayer
+        ]);
+        if (diff > endZonePathLength) {
+            return false;
+        }
+    }
+
+    //GooseLudo.endZoneIds.includes(newPos)
 
     // Check if there's a barrier (2+ opponent pieces) at newPos
     const tokensAtNewPos = GooseLudo.state.tokens.filter(
@@ -353,7 +365,22 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
         return [piece.position, diceResults];
     }
 
-    const newPos = piece.position + moveDistance;
+    let newPos;
+
+    if (typeof piece.position === "string") {
+        const newPosInt = Number(piece.position.slice(-1)) + moveDistance;
+        newPos = piece.position.slice(0, -1) + String(newPosInt);
+    }
+    else {
+        newPos = piece.position + moveDistance;
+    }
+
+    if (newPos > colourPathLengths[GooseLudo.state.currentPlayer]) {
+        const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
+        newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer] +
+            String(diff);
+    }
+
     const movePossible = canMoveTo(playerTurn, piece, newPos);
     if (!movePossible) {
         return [piece.position, diceResults]; // no move
@@ -368,6 +395,14 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     const updatedDiceResults = [0, 0]; // all dice used up
     return [newPos, updatedDiceResults];
 };
+
+const anotherPieceAtPosition = function (piece) {
+    return GooseLudo.state.tokens.filter(
+        (t) => t.position === piece.position
+    );
+
+};
+
 
 /**
  * Applies special square effects after movement.
@@ -412,13 +447,11 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
     }
 
     // Check if creating a barrier (landing on own piece)
-    const tokensAtPos = GooseLudo.state.tokens.filter(
-        (t) => t.position === newPos && t.player === playerTurn
-    );
+    const tokensAtPos = anotherPieceAtPosition(piece);
 
     if (tokensAtPos.length >= 2) {
         // Barrier created - mark pieces as in barrier
-        tokensAtPos.forEach((t) => {
+        tokensAtPos.filter((t) => t.player === playerTurn).forEach((t) => {
             t.inBarrier = true;
         });
     }
@@ -432,10 +465,7 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
         }
     });
 
-    // Check if moved into end zone and handle transition - edit
-    if (newPos > mainPathLength) {
-        piece.position = "end";
-    }
+    return;
 };
 
 /**

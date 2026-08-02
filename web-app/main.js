@@ -156,6 +156,34 @@ const boardCoords = {
         ]
     },
 
+    endZones: {
+        red: [
+            { x: 590, y: 400 },
+            { x: 560, y: 310 },
+            { x: 590, y: 370 },
+            { x: 590, y: 430 }
+        ],
+        yellow: [
+            { x: 590, y: 920 },
+            { x: 590, y: 860 },
+            { x: 590, y: 800 },
+            { x: 590, y: 740 }
+        ],
+        green: [
+            { x: 250, y: 590 },
+            { x: 310, y: 590 },
+            { x: 370, y: 590 },
+            { x: 430, y: 590 }
+
+        ],
+        blue: [
+            { x: 920, y: 590 },
+            { x: 980, y: 590 },
+            { x: 1040, y: 590 },
+            { x: 1100, y: 590 }
+        ]
+    },
+
     safeSquares: GooseLudo.safeSquares
 };
 
@@ -219,6 +247,7 @@ const getTokenCoords = function (token) {
     if (token.position === "end") {
         return boardCoords.finalPath[token.player][token.id];
     }
+
     if (typeof token.position === "number" && token.position >= 1 &&
         token.position <= boardCoords.mainPath.length) {
         return boardCoords.mainPath[token.position - 1];
@@ -264,6 +293,9 @@ const renderPieces = function () {
             `#token-${token.player}-${token.id}`
         );
         if (!tokenImage) return;
+
+        // Update the position of the token based on its current state
+
 
         const coords = getTokenCoords(token);
         tokenImage.setAttribute("x", coords.x);
