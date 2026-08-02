@@ -29,8 +29,8 @@ GooseLudo.state = {
     lastPieceMoved: null
 };
 
-GooseLudo.playerList = ["yellow", "blue", "red", "green"];
-GooseLudo.numPlayers = 4;
+GooseLudo.playerList = ["yellow"];
+GooseLudo.numPlayers = GooseLudo.playerList.length;
 
 
 /**
@@ -248,14 +248,23 @@ const canMoveTo = function (playerTurn, piece, newPos) {
     }
 
     // Check if moved into end zone and handle transition - edit
-    if (newPos > colourPathLengths[GooseLudo.state.currentPlayer]) {
+    if (typeof piece.position !== "string"
+        && newPos > colourPathLengths[GooseLudo.state.currentPlayer]
+        && piece.position <= colourPathLengths[GooseLudo.state.currentPlayer]) {
+
         const diff = String(newPos - colourPathLengths[
             GooseLudo.state.currentPlayer
         ]);
         if (diff > endZonePathLength) {
             return false;
         }
+
     }
+    else if (piece.position !== "home"
+        && GooseLudo.endZoneIds.includes(newPos)) {
+        return true;
+    }
+
 
     //GooseLudo.endZoneIds.includes(newPos)
 
@@ -371,14 +380,19 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
         const newPosInt = Number(piece.position.slice(-1)) + moveDistance;
         newPos = piece.position.slice(0, -1) + String(newPosInt);
     }
-    else {
-        newPos = piece.position + moveDistance;
-    }
-
-    if (newPos > colourPathLengths[GooseLudo.state.currentPlayer]) {
+    else if ((newPos = piece.position + moveDistance) > colourPathLengths[GooseLudo.state.currentPlayer]
+        && piece.position <= colourPathLengths[GooseLudo.state.currentPlayer]) {
         const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
         newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer] +
             String(diff);
+        console.log('help');
+    }
+    else {
+        newPos = (piece.position + moveDistance) % 69;
+        if (newPos < piece.position) {
+            newPos += 1;
+        }
+        console.log('welp');
     }
 
     const movePossible = canMoveTo(playerTurn, piece, newPos);

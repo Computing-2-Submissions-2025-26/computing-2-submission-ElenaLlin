@@ -244,13 +244,14 @@ const getTokenCoords = function (token) {
     if (token.position === "home") {
         return boardCoords.homePositions[token.player][token.id];
     }
-    if (token.position === "end") {
-        return boardCoords.finalPath[token.player][token.id];
-    }
-
     if (typeof token.position === "number" && token.position >= 1 &&
         token.position <= boardCoords.mainPath.length) {
         return boardCoords.mainPath[token.position - 1];
+    }
+    console.log(token.position.includes(token.player));
+
+    if (token.position.includes(token.player)) {
+        return boardCoords.finalPath[token.player][Number(token.position.slice(-1))];
     }
     return { x: 0, y: 0 };
 };

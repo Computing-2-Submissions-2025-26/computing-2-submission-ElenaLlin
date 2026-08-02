@@ -1,7 +1,7 @@
 :root
 {
     --aside-width: 230px;
-    --header-font-size: 32pt;
+    --header-font-size: 6pt;
     --header-height: 64px;
     --header-padding: 0.25em;
 }
@@ -16,16 +16,19 @@ body
 }
 
 header{
-    background-color: gainsboro; 
+    background-color: gainsboro;
+    color: black; 
     font-size: var(--header-font-size);
     font-weight: bold;
     height: var(--header-height);
     left: 0px;
     padding-top: var(--header-padding);
-    position: absolute;
+/*     position: absolute;
+ */    
     text-align: center;
     top: 0px;
     width: 100%;
+    margin: 0px;
 }
 
 aside {
