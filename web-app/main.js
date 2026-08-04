@@ -188,10 +188,10 @@ const boardCoords = {
 };
 
 const tokenFiles = {
-    red: "redToken.svg",
-    yellow: "yellowToken.svg",
-    green: "greenToken.svg",
-    blue: "blueToken.svg"
+    red: "assets/redToken.svg",
+    yellow: "assets/yellowToken.svg",
+    green: "assets/greenToken.svg",
+    blue: "assets/blueToken.svg"
 };
 
 const tokenSize = 41;
@@ -504,7 +504,7 @@ const initializeUI = () => {
 
 function loadBoardSVG() {
     return new Promise((resolve, reject) => {
-        fetch("board.svg")
+        fetch("assets/board.svg")
             .then((response) => response.text())
             .then((svgContent) => {
                 document.getElementById("game_board").innerHTML = svgContent;
