@@ -556,7 +556,7 @@ GooseLudo.isVictory = function () {
             (token) => token.player === p
         );
         return playerTokens.length > 0 && playerTokens.every(
-            (token) => token.position === "end"
+            (token) => token.position === token.player + "8"
         );
     });
 };
