@@ -87,7 +87,7 @@ const endZoneSquares = function (player, i) {
 
     // map the home square to a player index based on order in homePositions
     endSq.colour = player;
-    endSq.id = endSq.colour + String(i);
+    endSq.id = endSq.colour + String(i + 1); // 1-based indexing for end zone
 
     GooseLudo.endZoneIds.push(endSq.id);
     GooseLudo.state.boardSquares.push(endSq);
@@ -242,8 +242,10 @@ const leaveHome = function (playerTurn, piece, diceResults) {
 };
 
 const canMoveTo = function (playerTurn, piece, newPos) {
+    console.log(newPos);
     // Check if position is within valid range
     if (newPos < 1) {
+        console.log('-ve position');
         return false;
     }
 
@@ -256,33 +258,39 @@ const canMoveTo = function (playerTurn, piece, newPos) {
             GooseLudo.state.currentPlayer
         ]);
         if (diff > endZonePathLength) {
+            console.log('too far into end zone');
             return false;
         }
 
     }
     else if (piece.position !== "home"
         && GooseLudo.endZoneIds.includes(newPos)) {
+        console.log('end zone');
         return true;
     }
+    else if (typeof newPos === "string"
+        && !GooseLudo.endZoneIds.includes(newPos)) {
+        console.log('invalid end zone');
+        return false;
+    }
 
-
-    //GooseLudo.endZoneIds.includes(newPos)
-
-    // Check if there's a barrier (2+ opponent pieces) at newPos
+    // Check if there's a barrier (2 opponent pieces) from pos to newPos
     const tokensAtNewPos = GooseLudo.state.tokens.filter(
         (t) => t.position === newPos
     );
 
-    // If 2+ pieces at destination (barrier)
-    if (tokensAtNewPos.length >= 2) {
+    // If 2 pieces at destination (barrier)
+    if (tokensAtNewPos.length === 2) {
         // Can only land if it's own barrier (all pieces same color)
         const ownPieces = tokensAtNewPos.filter((t) => t.player === playerTurn);
         if (ownPieces.length !== tokensAtNewPos.length) {
             // Barrier belongs to opponent
+            console.log('opponent barrier');
             return false;
         }
     }
 
+    console.log('can move to', newPos);
     return true;
 };
 
@@ -295,6 +303,7 @@ const movablePieces = function (playerTurn, diceResults) {
     // Filter pieces that can move
     return playerTokens.filter((piece) => {
         if (piece.waitTurns > 0) {
+            console.log('piece waiting');
             return false;
         }
 
@@ -304,7 +313,7 @@ const movablePieces = function (playerTurn, diceResults) {
         }
 
         // Pieces on board - check if destination is valid
-        const newPos = piece.position + moveDistance;
+        const newPos = newPosCalc(piece, moveDistance);
         return canMoveTo(playerTurn, piece, newPos);
     });
 };
@@ -343,6 +352,32 @@ const checkCapture = function (playerTurn, piece, newPos) {
     }
 };
 
+const newPosCalc = function (piece, moveDistance) {
+    let newPos;
+
+    if (typeof piece.position === "string") {
+        const newPosInt = Number(piece.position.slice(-1)) + moveDistance;
+        newPos = piece.position.slice(0, -1) + String(newPosInt);
+    }
+    else if ((newPos = piece.position + moveDistance)
+        > colourPathLengths[GooseLudo.state.currentPlayer]
+        && piece.position <= colourPathLengths[GooseLudo.state.currentPlayer]) {
+
+        const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
+        newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer]
+            + String(diff);
+        console.log('help');
+    }
+    else {
+        newPos = (piece.position + moveDistance) % 69;
+        if (newPos < piece.position) {
+            newPos += 1;
+        }
+        console.log('welp');
+    }
+
+    return newPos;
+};
 /**
  * Moves a token according to the supplied dice values.
  *
@@ -374,26 +409,7 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
         return [piece.position, diceResults];
     }
 
-    let newPos;
-
-    if (typeof piece.position === "string") {
-        const newPosInt = Number(piece.position.slice(-1)) + moveDistance;
-        newPos = piece.position.slice(0, -1) + String(newPosInt);
-    }
-    else if ((newPos = piece.position + moveDistance) > colourPathLengths[GooseLudo.state.currentPlayer]
-        && piece.position <= colourPathLengths[GooseLudo.state.currentPlayer]) {
-        const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
-        newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer] +
-            String(diff);
-        console.log('help');
-    }
-    else {
-        newPos = (piece.position + moveDistance) % 69;
-        if (newPos < piece.position) {
-            newPos += 1;
-        }
-        console.log('welp');
-    }
+    const newPos = newPosCalc(piece, moveDistance);
 
     const movePossible = canMoveTo(playerTurn, piece, newPos);
     if (!movePossible) {

@@ -247,14 +247,18 @@ const getTokenCoords = function (token) {
     if (token.position === "home") {
         return boardCoords.homePositions[token.player][token.id];
     }
-    if (typeof token.position === "number" && token.position >= 1 &&
-        token.position <= boardCoords.mainPath.length) {
+    if (token.position === token.player + "8") {
+        return boardCoords.endZones[token.player][token.id]; // edit
+    }
+    if (typeof token.position === "number"
+        && token.position >= 1
+        && token.position <= boardCoords.mainPath.length) {
         return boardCoords.mainPath[token.position - 1];
     }
     console.log(token.position.includes(token.player));
 
     if (token.position.includes(token.player)) {
-        return boardCoords.finalPath[token.player][Number(token.position.slice(-1))];
+        return boardCoords.finalPath[token.player][Number(token.position.slice(-1)) - 1];
     }
     return { x: 0, y: 0 };
 };
@@ -420,6 +424,7 @@ const endTurn = () => {
     updateAvailableMoves();
     clearSelectable();
     setStatus("New turn. Press Roll to begin.");
+    console.log(GooseLudo.state.tokens);
     rollButton.disabled = false;
     endTurnButton.disabled = true;
     renderPieces();
