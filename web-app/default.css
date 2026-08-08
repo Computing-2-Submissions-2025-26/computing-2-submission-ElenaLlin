@@ -3,7 +3,6 @@
     --aside-width: 230px;
     --header-font-size: 6pt;
     --header-height: 64px;
-    --header-padding: 0.25em;
 }
 
 * { 
@@ -23,8 +22,7 @@ header{
     height: var(--header-height);
     left: 0px;
     padding-top: var(--header-padding);
-/*     position: absolute;
- */    
+    position: absolute;
     text-align: center;
     top: 0px;
     width: 100%;
@@ -99,11 +97,9 @@ aside {
 
 .token.selectable {
     cursor: pointer;
-    filter: drop-shadow(0 0 8px gold);
+    filter: drop-shadow(0 0 8px darkblue);
 }
 
 .token.selected {
     filter: drop-shadow(0 0 12px orange);
 }
-
-

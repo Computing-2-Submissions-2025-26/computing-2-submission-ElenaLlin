@@ -12,27 +12,6 @@ import R from "./ramda.js";
  */
 const GooseLudo = {};
 
-const colourPathLengths = [68, 17, 34, 51];
-const mainPathLength = 68;
-const safeSquares = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68];
-const homePositions = [5, 22, 39, 56];
-const bridgeSquares = [{ from: 36, to: 60 }];
-const diceSquares = [12, 48];
-const wellSquare = 24;
-const endZonePathLength = 8;
-GooseLudo.endZoneIds = [];
-
-GooseLudo.state = {
-    tokens: [],
-    currentPlayer: 0,  // 0-based indexing
-    boardSquares: [],
-    lastPieceMoved: null
-};
-
-GooseLudo.playerList = ["yellow"];
-GooseLudo.numPlayers = GooseLudo.playerList.length;
-
-
 /**
  * A Board is a list of squares making the path taken by player tokens.
  * Tokens can be placed into these squares.
@@ -59,10 +38,29 @@ GooseLudo.numPlayers = GooseLudo.playerList.length;
  * @memberof GooseLudo
  * @typedef {Object} Piece
  * @property {number} id - The token ID (0-based indexing)
-
  * @property {number || string} position - square or home ID (1-based index)
  * @property {boolean} inBarrier - is this token part of a barrier
  */
+
+const colourPathLengths = [68, 17, 34, 51];
+const mainPathLength = 68;
+const safeSquares = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68];
+const homePositions = [5, 22, 39, 56];
+const bridgeSquares = [{ from: 36, to: 60 }];
+const diceSquares = [12, 48];
+const wellSquare = 24;
+const endZonePathLength = 8;
+GooseLudo.endZoneIds = [];
+
+GooseLudo.state = {
+    tokens: [],
+    currentPlayer: 0,  // 0-based indexing
+    boardSquares: [],
+    lastPieceMoved: null
+};
+
+GooseLudo.playerList = ["yellow"];
+GooseLudo.numPlayers = GooseLudo.playerList.length;
 
 const setSquareTypes = function (sq, i) {
     sq.id = i + 1; // 1-based indexing for squares
@@ -209,11 +207,20 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
         reroll = (d1 === d2) || d1 === 6 || d2 === 6;
     }
 
+    let reason;
+
     if (rolls === 3 && reroll) {
         // if rolled 3 times last piece moved dies
+        if (diceResults.includes(6)) {
+            reason = "6";
+        }
+        else {
+            reason = "double";
+        }
         returnLastPieceToHome();
 
         diceResults = [0, 0];
+
     }
 
     // If player had all their pieces out of home, treat 6 as 7
@@ -231,7 +238,7 @@ GooseLudo.roll = function (playerTurn, rolls, reroll) {
         }
     }
 
-    return [diceResults, rolls, reroll];
+    return [diceResults, rolls, reroll, reason];
 };
 
 
@@ -245,7 +252,7 @@ const canMoveTo = function (playerTurn, piece, newPos) {
     console.log(newPos);
     // Check if position is within valid range
     if (newPos < 1) {
-        console.log('-ve position');
+        console.log("-ve position");
         return false;
     }
 
@@ -258,19 +265,19 @@ const canMoveTo = function (playerTurn, piece, newPos) {
             GooseLudo.state.currentPlayer
         ]);
         if (diff > endZonePathLength) {
-            console.log('too far into end zone');
+            console.log("too far into end zone");
             return false;
         }
 
     }
     else if (piece.position !== "home"
         && GooseLudo.endZoneIds.includes(newPos)) {
-        console.log('end zone');
+        console.log("end zone");
         return true;
     }
     else if (typeof newPos === "string"
         && !GooseLudo.endZoneIds.includes(newPos)) {
-        console.log('invalid end zone');
+        console.log("invalid end zone");
         return false;
     }
 
@@ -285,12 +292,12 @@ const canMoveTo = function (playerTurn, piece, newPos) {
         const ownPieces = tokensAtNewPos.filter((t) => t.player === playerTurn);
         if (ownPieces.length !== tokensAtNewPos.length) {
             // Barrier belongs to opponent
-            console.log('opponent barrier');
+            console.log("opponent barrier");
             return false;
         }
     }
 
-    console.log('can move to', newPos);
+    console.log("can move to", newPos);
     return true;
 };
 
@@ -303,7 +310,7 @@ const movablePieces = function (playerTurn, diceResults) {
     // Filter pieces that can move
     return playerTokens.filter((piece) => {
         if (piece.waitTurns > 0) {
-            console.log('piece waiting');
+            console.log("piece waiting");
             return false;
         }
 
@@ -366,14 +373,14 @@ const newPosCalc = function (piece, moveDistance) {
         const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
         newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer]
             + String(diff);
-        console.log('help');
+        console.log("help");
     }
     else {
         newPos = (piece.position + moveDistance) % 69;
         if (newPos < piece.position) {
             newPos += 1;
         }
-        console.log('welp');
+        console.log("welp");
     }
 
     return newPos;
@@ -498,6 +505,16 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
     return;
 };
 
+const updateTurnWait = function (state, currentPlayer) {
+    state.tokens.forEach((piece) => {
+        if (piece.player === currentPlayer && piece.waitTurns > 0) {
+            piece.waitTurns -= 1;
+        }
+    });
+
+    return state;
+};
+
 /**
  * Executes a complete player turn.
  *
@@ -506,21 +523,17 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
  *
  * @memberof GooseLudo
  * @function playersTurn
- * @returns {void}
+ * @returns {state}
  */
 
-GooseLudo.playersTurn = function () {
-    const currentPlayer = GooseLudo.playerList[GooseLudo.state.currentPlayer];
+GooseLudo.playersTurn = function (state) {
+    const currentPlayer = GooseLudo.playerList[state.currentPlayer];
 
-    GooseLudo.state.tokens.forEach((piece) => {
-        if (piece.player === currentPlayer && piece.waitTurns > 0) {
-            piece.waitTurns -= 1;
-        }
-    });
+    updatedState = updateTurnWait(state, currentPlayer);
 
-    let rolls = 0;
-    let reroll = true;
-    while (reroll && rolls < 3) {
+    updatedState.rolls = 0;
+    updatedState.reroll = true;
+    if (reroll && rolls < 3) {
         const [diceResults, updatedRolls, updatedReroll] = GooseLudo.roll(
             currentPlayer, rolls, reroll
         );
@@ -536,7 +549,9 @@ GooseLudo.playersTurn = function () {
         }
     }
 
-    GooseLudo.playerNext(GooseLudo.state.currentPlayer);
+    GooseLudo.playerNext(updatedState.currentPlayer);
+
+    return updatedState;
 };
 
 /**
