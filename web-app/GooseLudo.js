@@ -485,7 +485,7 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
 
     // Well square: piece can't move for two turns
     if (newPos === wellSquare) {
-        piece.waitTurns = 2;
+        piece.waitTurns = 3;
     }
 
     // Check if creating a barrier (landing on own piece)

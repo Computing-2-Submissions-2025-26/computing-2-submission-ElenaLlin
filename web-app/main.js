@@ -1,7 +1,6 @@
 import R from "./ramda.js";
 import GooseLudo from "./GooseLudo.js";
 
-
 const game_board = document.getElementById("game_board");
 let boardSVG = null;
 let boardReady = false;
@@ -144,16 +143,15 @@ const boardCoords = {
             { x: 292, y: 565 },
             { x: 349, y: 565 },
             { x: 406, y: 565 }
-
         ],
         blue: [
-            { x: 723, y: 565 },
-            { x: 780, y: 565 },
-            { x: 838, y: 565 },
-            { x: 895, y: 565 },
-            { x: 948, y: 565 },
+            { x: 1066, y: 565 },
             { x: 1009, y: 565 },
-            { x: 1066, y: 565 }
+            { x: 948, y: 565 },
+            { x: 895, y: 565 },
+            { x: 838, y: 565 },
+            { x: 780, y: 565 },
+            { x: 723, y: 565 }
         ]
     },
 
@@ -310,11 +308,13 @@ const renderPieces = function () {
         // barriers
         const positionPieces = GooseLudo.anotherPieceAtPosition(token);
         if (positionPieces.length === 2 && token.position !== "home") {
-            const index = token.id % 2;
+            const index = positionPieces.indexOf(token) % 2;
             if (index === 0 && horizontalSquares.includes(token.position)) {
                 tokenImage.setAttribute("x", coords.x - (tokenSize / 2));
+                tokenImage.setAttribute("y", coords.y);
             }
             else if (index === 0) {
+                tokenImage.setAttribute("x", coords.x);
                 tokenImage.setAttribute("y", coords.y - (tokenSize / 2));
             }
             else {
@@ -565,12 +565,14 @@ const handleRoll = () => {
 };
 
 const endTurn = () => {
-    GooseLudo.playerNext(GooseLudo.state.currentPlayer, gameState.players);
+    const playerIndex = GooseLudo.playerNext(GooseLudo.state.currentPlayer, gameState.players);
     gameState.rolls = 0;
     gameState.reroll = true;
     gameState.diceResults = null;
     gameState.availableMoves = [];
     gameState.selectedPiece = null;
+    gameState.currentPlayer = gameState.players[playerIndex];
+    GooseLudo.updateTurnWait(GooseLudo.state, gameState.currentPlayer);
     updateCurrentPlayer();
     setDiceResult(null);
     updateAvailableMoves();
