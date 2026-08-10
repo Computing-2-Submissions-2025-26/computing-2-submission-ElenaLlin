@@ -307,11 +307,10 @@ const renderPieces = function () {
         const coords = getTokenCoords(token);
 
         // Update the position of the token based on its current state
-        // barrier code here - edit - give id then shift outside the foreach
-        const positionPieces = GooseLudo.anotherPieceAtPosition(token); // colour?
+        // barriers
+        const positionPieces = GooseLudo.anotherPieceAtPosition(token);
         if (positionPieces.length === 2 && token.position !== "home") {
             const index = token.id % 2;
-            console.log(index, "token", token.id, "positionPieces", positionPieces);
             if (index === 0 && horizontalSquares.includes(token.position)) {
                 tokenImage.setAttribute("x", coords.x - (tokenSize / 2));
             }
@@ -376,7 +375,8 @@ const gameState = {
     // only init on
     currentPlayer: GooseLudo.playerList[GooseLudo.state.currentPlayer],
     selectedPiece: null,
-    availableMoves: []
+    availableMoves: [],
+    players: GooseLudo.playerList
 };
 
 // Web text updates
@@ -443,7 +443,7 @@ const moveSelectedPiece = (piece) => {
     }
 
     const [newPos, updatedDiceResults] = GooseLudo.move(
-        GooseLudo.playerList[GooseLudo.state.currentPlayer],
+        gameState.currentPlayer,
         piece,
         [...gameState.diceResults]
     );
@@ -456,7 +456,7 @@ const moveSelectedPiece = (piece) => {
     clearSelectable();
     renderPieces();
 
-    if (GooseLudo.isVictory()) {
+    if (GooseLudo.isVictory(gameState.players)) {
         setStatus(`${GooseLudo.playerList[
             GooseLudo.state.currentPlayer
         ]} wins!`);
@@ -495,7 +495,7 @@ function tokenClicked(event) {
     const tokenImage = event.currentTarget;
     const player = tokenImage.dataset.player;
     const tokenId = Number(tokenImage.dataset.tokenId);
-    const currentPlayer = GooseLudo.playerList[GooseLudo.state.currentPlayer];
+    const currentPlayer = gameState.currentPlayer;
 
     if (player !== currentPlayer) {
         setStatus("Choose a piece for the current player.");
@@ -531,7 +531,7 @@ function tokenClicked(event) {
 }
 
 const handleRoll = () => {
-    const currentPlayer = GooseLudo.playerList[GooseLudo.state.currentPlayer];
+    const currentPlayer = gameState.currentPlayer;
     const [diceResults, rolls, reroll, reason] = GooseLudo.roll(
         currentPlayer, gameState.rolls, gameState.reroll
     );
@@ -565,7 +565,7 @@ const handleRoll = () => {
 };
 
 const endTurn = () => {
-    GooseLudo.playerNext(GooseLudo.state.currentPlayer);
+    GooseLudo.playerNext(GooseLudo.state.currentPlayer, gameState.players);
     gameState.rolls = 0;
     gameState.reroll = true;
     gameState.diceResults = null;
@@ -593,9 +593,24 @@ const initialiseUI = () => {
 };
 
 
+function unlock() {
+    const value = Number(document.getElementById("playersInput").value);
+    if (!Number.isInteger(value) || value < 1 || value > 4) {
+        document.getElementById("error").style.display = "block";
+        return;
+    }
+    document.getElementById("error").style.display = "none";
+    document.getElementById("gate").classList.add("hidden");
+    document.getElementById("main").classList.remove("hidden");
 
-document.addEventListener("DOMContentLoaded", () => {
+    gameState.players = GooseLudo.playerList.slice(0, value);
+
+    GooseLudo.startingBoard(gameState.players);
     loadBoardSVG().then(() => {
         initialiseUI();
     });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("continueButton").addEventListener("click", unlock);
 });

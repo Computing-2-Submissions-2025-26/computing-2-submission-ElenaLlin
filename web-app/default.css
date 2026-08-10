@@ -1,12 +1,34 @@
 :root
 {
     --aside-width: 230px;
-    --header-font-size: 6pt;
-    --header-height: 64px;
+    --header-font-size: 0.65em;
+    --header-height: 70px;
 }
 
 * { 
     box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+.screen {
+    color: black;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+#playersInput {
+    width: 15em;
+    padding: 0.5em;
+    margin-top: 1em;
+}
+
+#continueButton {
+    padding: 0.5em 1em;
+    margin-top: 1em;
 }
 
 body 
@@ -15,7 +37,7 @@ body
 }
 
 header{
-    background-color: gainsboro;
+    background-color: lightblue;
     color: black; 
     font-size: var(--header-font-size);
     font-weight: bold;
@@ -26,7 +48,6 @@ header{
     text-align: center;
     top: 0px;
     width: 100%;
-    margin: 0px;
 }
 
 aside {
@@ -40,7 +61,6 @@ aside {
 }
 
 main {
-    background-color: black;
     right: var(--aside-width);
     height: calc(100% - var(--header-height));
     top: var(--header-height);
@@ -103,3 +123,5 @@ aside {
 .token.selected {
     filter: drop-shadow(0 0 12px orange);
 }
+
+.hidden { display: none; }

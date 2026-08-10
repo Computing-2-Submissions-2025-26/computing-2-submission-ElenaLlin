@@ -61,7 +61,7 @@ GooseLudo.state = {
     lastPieceMoved: null
 };
 
-GooseLudo.playerList = ["yellow"];
+GooseLudo.playerList = ["yellow", "blue", "red", "green"];
 GooseLudo.numPlayers = GooseLudo.playerList.length;
 
 const setSquareTypes = function (sq, i) {
@@ -139,15 +139,16 @@ GooseLudo.startingBoard = function (players) {
 
     GooseLudo.state.boardSquares.forEach((sq, i) => setSquareTypes(sq, i));
 
-    createTokens(GooseLudo.playerList);
+    createTokens(players);
 
     for (let i = 0; i < endZonePathLength; i++) {
-        GooseLudo.playerList.forEach((player, id) => endZoneSquares(player, i));
+        players.forEach((player, id) => endZoneSquares(player, i));
         //const element = [index];
     }
     return GooseLudo.state.boardSquares;
 };
-GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
+// move this to main.js startup
+//GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
 const returnLastPieceToHome = function () {
     if (GooseLudo.state.lastPieceMoved) {
@@ -505,10 +506,10 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
  * @returns {number} The next player's index.
  */
 
-GooseLudo.playerNext = function (currentPlayerIndex) {
+GooseLudo.playerNext = function (currentPlayerIndex, players = []) {
     GooseLudo.state.currentPlayer = (
         currentPlayerIndex + 1
-    ) % GooseLudo.playerList.length;
+    ) % players.length;
     return GooseLudo.state.currentPlayer;
 };
 
@@ -554,7 +555,7 @@ GooseLudo.playersTurn = function (state) {
         }
     }
 
-    GooseLudo.playerNext(state.currentPlayer);
+    GooseLudo.playerNext(state.currentPlayer, GooseLudo.playerList);
 
     updatedState = updateTurnWait(state, currentPlayer);
 
@@ -571,9 +572,9 @@ GooseLudo.playersTurn = function (state) {
  * @returns {boolean} True if a player has won.
  */
 
-GooseLudo.isVictory = function () {
+GooseLudo.isVictory = function (players = []) {
     // is there any player who has all their tokens in the end zone?
-    return GooseLudo.playerList.some(function (p) {
+    return players.some(function (p) {
         const playerTokens = GooseLudo.state.tokens.filter(
             (token) => token.player === p
         );

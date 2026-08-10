@@ -10,28 +10,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
-<header>
-    <h1 id="title">Goose Ludo</h1>
-    <a href="/docs/">API Documentation</a>
-</header>
+<!-- Players screen: shown first -->
+<div id="gate" class="screen">
+    <h2>Enter to continue</h2>
+    <p>How many players (1-4)?</p>
+    <input id="playersInput" type="number" min="1" max="4" step="1" placeholder="Enter number of players..." autofocus />
+    <br>
+    <button id="continueButton">Continue</button>
+    <p id="error" style="color:#dc2626; display:none;">Please enter a value between 1 and 4.</p>
+</div>
 
-<aside>
-    <section id="game-info">
-        <h2>Game Status</h2>
-        <p><strong>Player:</strong> <span id="current-player">Yellow</span></p>
-        <p><strong>Dice:</strong> <span id="dice-result">-</span></p>
-        <p id="status-message">Press Roll to begin.</p>
-    </section>
-    <section id="controls">
-        <button id="roll-button">Roll Dice</button>
-        <button id="end-turn-button" disabled>End Turn</button>
-    </section>
-    <section id="moves">
-        <h3>Available moves</h3>
-        <ul id="available-moves"></ul>
-    </section>
-</aside>
+<!-- Main screen -->
+<div id="main" class="screen hidden">
+    <header>
+        <h1 id="title">Goose Ludo</h1>
+        <a href="/docs/">API Documentation</a>
+    </header>
 
-<main tabindex="-1">
-    <div id="game_board"></div>
-</main>
+    <aside>
+        <section id="game-info">
+            <h2>Game Status</h2>
+            <p><strong>Player:</strong> <span id="current-player">Yellow</span></p>
+            <p><strong>Dice:</strong> <span id="dice-result">-</span></p>
+            <p id="status-message">Press Roll to begin.</p>
+        </section>
+        <section id="controls">
+            <button id="roll-button">Roll Dice</button>
+            <button id="end-turn-button" disabled>End Turn</button>
+        </section>
+        <section id="moves">
+            <h3>Available moves</h3>
+            <ul id="available-moves"></ul>
+        </section>
+    </aside>
+
+    <main tabindex="-1">
+        <div id="game_board"></div>
+    </main>
+</div>
