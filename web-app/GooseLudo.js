@@ -37,8 +37,10 @@ const GooseLudo = {};
  * Each player had four.
  * @memberof GooseLudo
  * @typedef {Object} Piece
+ * @property {string} player
  * @property {number} id - The token ID (0-based indexing)
  * @property {number || string} position - square or home ID (1-based index)
+ * @property {number} waitTurns
  * @property {boolean} inBarrier - is this token part of a barrier
  */
 
@@ -147,31 +149,11 @@ GooseLudo.startingBoard = function (players) {
 };
 GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
-/**
- * Advances play to the next player.
- *
- * Player order wraps around to the first player after the last.
- *
- * @memberof GooseLudo
- * @function playerNext
- * @param {number} currentPlayerIndex - Current player index.
- * @returns {number} The next player's index.
- */
-
-GooseLudo.playerNext = function (currentPlayerIndex) {
-    GooseLudo.state.currentPlayer = (
-        currentPlayerIndex + 1
-    ) % GooseLudo.playerList.length;
-    return GooseLudo.state.currentPlayer;
-};
-
 const returnLastPieceToHome = function () {
     if (GooseLudo.state.lastPieceMoved) {
         GooseLudo.state.lastPieceMoved.position = "home";
     }
 };
-
-
 
 // - if you roll a 6 and have a barrier, you break the barrier
 
@@ -301,6 +283,33 @@ const canMoveTo = function (playerTurn, piece, newPos) {
     return true;
 };
 
+const newPosCalc = function (piece, moveDistance) {
+    let newPos;
+
+    if (typeof piece.position === "string") {
+        const newPosInt = Number(piece.position.slice(-1)) + moveDistance;
+        newPos = piece.position.slice(0, -1) + String(newPosInt);
+    }
+    else if ((newPos = piece.position + moveDistance)
+        > colourPathLengths[GooseLudo.state.currentPlayer]
+        && piece.position <= colourPathLengths[GooseLudo.state.currentPlayer]) {
+
+        const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
+        newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer]
+            + String(diff);
+        console.log("help");
+    }
+    else {
+        newPos = (piece.position + moveDistance) % 69;
+        if (newPos < piece.position) {
+            newPos += 1;
+        }
+        console.log("welp");
+    }
+
+    return newPos;
+};
+
 const movablePieces = function (playerTurn, diceResults) {
     const moveDistance = diceResults[0] + diceResults[1];
     const playerTokens = GooseLudo.state.tokens.filter(
@@ -359,32 +368,7 @@ const checkCapture = function (playerTurn, piece, newPos) {
     }
 };
 
-const newPosCalc = function (piece, moveDistance) {
-    let newPos;
 
-    if (typeof piece.position === "string") {
-        const newPosInt = Number(piece.position.slice(-1)) + moveDistance;
-        newPos = piece.position.slice(0, -1) + String(newPosInt);
-    }
-    else if ((newPos = piece.position + moveDistance)
-        > colourPathLengths[GooseLudo.state.currentPlayer]
-        && piece.position <= colourPathLengths[GooseLudo.state.currentPlayer]) {
-
-        const diff = newPos - colourPathLengths[GooseLudo.state.currentPlayer];
-        newPos = GooseLudo.playerList[GooseLudo.state.currentPlayer]
-            + String(diff);
-        console.log("help");
-    }
-    else {
-        newPos = (piece.position + moveDistance) % 69;
-        if (newPos < piece.position) {
-            newPos += 1;
-        }
-        console.log("welp");
-    }
-
-    return newPos;
-};
 /**
  * Moves a token according to the supplied dice values.
  *
@@ -433,7 +417,12 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     return [newPos, updatedDiceResults];
 };
 
-const anotherPieceAtPosition = function (piece) {
+GooseLudo.anotherPieceAtPosition = function (piece, colour = undefined) {
+    if (colour) {
+        return GooseLudo.state.tokens.filter(
+            (t) => t.position === piece.position && t.player === colour
+        );
+    }
     return GooseLudo.state.tokens.filter(
         (t) => t.position === piece.position
     );
@@ -484,7 +473,7 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
     }
 
     // Check if creating a barrier (landing on own piece)
-    const tokensAtPos = anotherPieceAtPosition(piece);
+    const tokensAtPos = GooseLudo.anotherPieceAtPosition(piece);
 
     if (tokensAtPos.length >= 2) {
         // Barrier created - mark pieces as in barrier
@@ -503,6 +492,24 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
     });
 
     return;
+};
+
+/**
+ * Advances play to the next player.
+ *
+ * Player order wraps around to the first player after the last.
+ *
+ * @memberof GooseLudo
+ * @function playerNext
+ * @param {number} currentPlayerIndex - Current player index.
+ * @returns {number} The next player's index.
+ */
+
+GooseLudo.playerNext = function (currentPlayerIndex) {
+    GooseLudo.state.currentPlayer = (
+        currentPlayerIndex + 1
+    ) % GooseLudo.playerList.length;
+    return GooseLudo.state.currentPlayer;
 };
 
 const updateTurnWait = function (state, currentPlayer) {
@@ -529,10 +536,8 @@ const updateTurnWait = function (state, currentPlayer) {
 GooseLudo.playersTurn = function (state) {
     const currentPlayer = GooseLudo.playerList[state.currentPlayer];
 
-    updatedState = updateTurnWait(state, currentPlayer);
-
-    updatedState.rolls = 0;
-    updatedState.reroll = true;
+    state.rolls = 0;
+    state.reroll = true;
     if (reroll && rolls < 3) {
         const [diceResults, updatedRolls, updatedReroll] = GooseLudo.roll(
             currentPlayer, rolls, reroll
@@ -549,7 +554,9 @@ GooseLudo.playersTurn = function (state) {
         }
     }
 
-    GooseLudo.playerNext(updatedState.currentPlayer);
+    GooseLudo.playerNext(state.currentPlayer);
+
+    updatedState = updateTurnWait(state, currentPlayer);
 
     return updatedState;
 };

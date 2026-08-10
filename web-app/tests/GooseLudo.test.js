@@ -155,7 +155,7 @@ describe("squareEffects", function () {
         GooseLudo.squareEffects(
             "yellow",
             piece,
-            23
+            24
         );
 
         assert.strictEqual(piece.waitTurns, 2);

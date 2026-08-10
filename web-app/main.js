@@ -187,6 +187,11 @@ const boardCoords = {
     safeSquares: GooseLudo.safeSquares
 };
 
+const horizontalSquares = [1, 2, 3, 4, 5, 6, 7, 8,
+    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
+    60, 61, 62, 63, 64, 65, 66, 67, 68
+];
+
 const tokenFiles = {
     red: "assets/redToken.svg",
     yellow: "assets/yellowToken.svg",
@@ -299,15 +304,32 @@ const renderPieces = function () {
         );
         if (!tokenImage) { return; }
 
-        // Update the position of the token based on its current state
-        // barrier code here - edit
-
-
         const coords = getTokenCoords(token);
-        tokenImage.setAttribute("x", coords.x);
-        tokenImage.setAttribute("y", coords.y);
+
+        // Update the position of the token based on its current state
+        // barrier code here - edit - give id then shift outside the foreach
+        const positionPieces = GooseLudo.anotherPieceAtPosition(token); // colour?
+        if (positionPieces.length === 2 && token.position !== "home") {
+            const index = token.id % 2;
+            console.log(index, "token", token.id, "positionPieces", positionPieces);
+            if (index === 0 && horizontalSquares.includes(token.position)) {
+                tokenImage.setAttribute("x", coords.x - (tokenSize / 2));
+            }
+            else if (index === 0) {
+                tokenImage.setAttribute("y", coords.y - (tokenSize / 2));
+            }
+            else {
+                tokenImage.setAttribute("x", coords.x);
+                tokenImage.setAttribute("y", coords.y);
+            }
+        }
+        else {
+            tokenImage.setAttribute("x", coords.x);
+            tokenImage.setAttribute("y", coords.y);
+        }
         tokenImage.style.display = "block";
     });
+
 };
 
 function loadBoardSVG() {
@@ -443,6 +465,20 @@ const moveSelectedPiece = (piece) => {
         return;
     }
 
+    /*     if (gameState.diceResults !== [0, 0]) {
+            setStatus("A piece can still be moved");
+            setDiceResult(gameState.diceResults);
+            // mini function?
+            const movable = GooseLudo.getMovablePieces(
+                gameState.currentPlayer, gameState.diceResults
+            );
+            gameState.availableMoves = movable;
+            updateAvailableMoves();
+            rollButton.disabled = true;
+            endTurnButton.disabled = true;
+            return;
+        } */
+
     if (gameState.reroll && gameState.rolls < 3) {
         setStatus(
             "Move completed. Press Roll again for extra turn."
@@ -479,6 +515,13 @@ function tokenClicked(event) {
         return;
     }
 
+    if (gameState.diceResults === [0, 0]) {
+        setStatus("Out of moves");
+        setDiceResult(gameState.diceResults);
+        endTurnButton.disabled = false;
+        return;
+    }
+
     clearSelection();
     tokenImage.classList.add("selected");
     gameState.selectedPiece = piece;
@@ -499,6 +542,7 @@ const handleRoll = () => {
     gameState.reroll = reroll;
     setDiceResult(diceResults);
 
+    // make into mini function??
     const movable = GooseLudo.getMovablePieces(currentPlayer, diceResults);
     gameState.availableMoves = movable;
     updateAvailableMoves();
@@ -540,7 +584,7 @@ const endTurn = () => {
     renderPieces();
 };
 
-const initializeUI = () => {
+const initialiseUI = () => {
     updateCurrentPlayer();
     setStatus("Press Roll to begin.");
     setDiceResult(null);
@@ -552,6 +596,6 @@ const initializeUI = () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadBoardSVG().then(() => {
-        initializeUI();
+        initialiseUI();
     });
 });
