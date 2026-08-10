@@ -33,7 +33,7 @@ const boardCoords = {
         ]
     }, // hundred by a hundred px
 
-    mainPath: [ // +fifty seven horizontal -? high
+    mainPath: [
         { x: 695, y: 1123 }, // one
         { x: 695, y: 1066 },
         { x: 695, y: 1009 },
@@ -185,7 +185,8 @@ const boardCoords = {
     safeSquares: GooseLudo.safeSquares
 };
 
-const horizontalSquares = [1, 2, 3, 4, 5, 6, 7, 8,
+const horizontalSquares = [
+    1, 2, 3, 4, 5, 6, 7, 8,
     26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
     60, 61, 62, 63, 64, 65, 66, 67, 68
 ];
@@ -306,20 +307,23 @@ const renderPieces = function () {
 
         // Update the position of the token based on its current state
         // barriers
-        const positionPieces = GooseLudo.anotherPieceAtPosition(token);
+        const positionPieces = GooseLudo.anotherPieceAtPosition(token.position);
         if (positionPieces.length === 2 && token.position !== "home") {
             const index = positionPieces.indexOf(token) % 2;
             if (index === 0 && horizontalSquares.includes(token.position)) {
                 tokenImage.setAttribute("x", coords.x - (tokenSize / 2));
                 tokenImage.setAttribute("y", coords.y);
+                console.log(`shift x`);
             }
             else if (index === 0) {
                 tokenImage.setAttribute("x", coords.x);
                 tokenImage.setAttribute("y", coords.y - (tokenSize / 2));
+                console.log(`shift y`);
             }
             else {
                 tokenImage.setAttribute("x", coords.x);
                 tokenImage.setAttribute("y", coords.y);
+                console.log(`barrier`);
             }
         }
         else {
@@ -448,7 +452,12 @@ const moveSelectedPiece = (piece) => {
         [...gameState.diceResults]
     );
 
-    GooseLudo.squareEffects(GooseLudo.playerList[
+    if (newPos === piece.position && gameState.diceResults === [0, 0]) {
+        setStatus("No more moves");
+        return;
+    }
+
+    const effect = GooseLudo.squareEffects(GooseLudo.playerList[
         GooseLudo.state.currentPlayer
     ], piece, newPos);
     gameState.diceResults = updatedDiceResults;
@@ -465,33 +474,43 @@ const moveSelectedPiece = (piece) => {
         return;
     }
 
-    /*     if (gameState.diceResults !== [0, 0]) {
-            setStatus("A piece can still be moved");
-            setDiceResult(gameState.diceResults);
-            // mini function?
-            const movable = GooseLudo.getMovablePieces(
-                gameState.currentPlayer, gameState.diceResults
-            );
-            gameState.availableMoves = movable;
-            updateAvailableMoves();
-            rollButton.disabled = true;
-            endTurnButton.disabled = true;
-            return;
-        } */
+    if (gameState.diceResults !== [0, 0]) {
+        setStatus("A piece can still be moved");
+        setDiceResult(gameState.diceResults);
+        // mini function?
+        const movable = GooseLudo.getMovablePieces(
+            gameState.currentPlayer, gameState.diceResults
+        );
+        gameState.availableMoves = movable;
+        updateAvailableMoves();
+        highlightSelectableTokens();
+        rollButton.disabled = true;
+        endTurnButton.disabled = false;
+        return;
+    }
 
     if (gameState.reroll && gameState.rolls < 3) {
-        setStatus(
-            "Move completed. Press Roll again for extra turn."
-        );
+        if (effect.length > 0) {
+            setStatus(effect + "Press Roll again for extra turn.");
+        }
+        else {
+            setStatus(
+                "Move completed. Press Roll again for extra turn."
+            );
+        }
         rollButton.disabled = false;
         endTurnButton.disabled = true;
     } else {
-        setStatus("Move completed. Turn ends.");
+        if (effect.length > 0) {
+            setStatus(effect + "Turn ends.");
+        }
+        else { setStatus("Move completed. Turn ends."); }
         endTurnButton.disabled = false;
     }
 };
 
 function tokenClicked(event) {
+    console.log(`click`);
     const tokenImage = event.currentTarget;
     const player = tokenImage.dataset.player;
     const tokenId = Number(tokenImage.dataset.tokenId);
@@ -547,19 +566,18 @@ const handleRoll = () => {
     gameState.availableMoves = movable;
     updateAvailableMoves();
 
-    if (diceResults === [0, 0]) {
-        setStatus(`Rolled a ${reason} three times, last moved piece returns home`);
+    if (diceResults === [0, 0] && reason) {
+        setStatus(`Rolled a ${reason} three times, 
+            last moved piece returns home`);
     }
-
-    if (movable.length === 0) {
+    else if (movable.length === 0) {
         setStatus("No legal moves available. Turn ends.");
-        rollButton.disabled = true;
-        endTurnButton.disabled = false;
-        return;
-    }
 
-    setStatus("Select one of the highlighted pieces to move.");
-    highlightSelectableTokens();
+    }
+    else {
+        setStatus("Select one of the highlighted pieces to move.");
+        highlightSelectableTokens();
+    }
     rollButton.disabled = true;
     endTurnButton.disabled = false;
 };
@@ -568,7 +586,7 @@ const endTurn = () => {
     const playerIndex = GooseLudo.playerNext(GooseLudo.state.currentPlayer, gameState.players);
     gameState.rolls = 0;
     gameState.reroll = true;
-    gameState.diceResults = null;
+    gameState.diceResults = [0, 0];
     gameState.availableMoves = [];
     gameState.selectedPiece = null;
     gameState.currentPlayer = gameState.players[playerIndex];
