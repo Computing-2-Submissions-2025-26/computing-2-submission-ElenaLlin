@@ -62,7 +62,6 @@ GooseLudo.state = {
 };
 
 GooseLudo.playerList = ["yellow", "blue", "red", "green"];
-GooseLudo.numPlayers = GooseLudo.playerList.length;
 
 const setSquareTypes = function (sq, i) {
     sq.id = i + 1; // 1-based indexing for squares
@@ -147,8 +146,6 @@ GooseLudo.startingBoard = function (players) {
     }
     return GooseLudo.state.boardSquares;
 };
-// move this to main.js startup
-//GooseLudo.startingBoard(GooseLudo.playerList); // edited in main.js onclick
 
 const returnLastPieceToHome = function () {
     if (GooseLudo.state.lastPieceMoved) {
@@ -335,6 +332,14 @@ const movablePieces = function (playerTurn, diceResults) {
     });
 };
 
+/**
+ * Retrieves the list of pieces that can be moved for the current player.
+ * @memberof GooseLudo
+ * @function getMovablePieces
+ * @param {string} playerTurn - The colour of the current player.
+ * @param {number[]} diceResults - The dice values rolled.
+ * @returns {GooseLudo.Piece[]} The list of movable pieces.
+ */
 GooseLudo.getMovablePieces = function (playerTurn, diceResults) {
     return movablePieces(playerTurn, diceResults);
 };
@@ -417,6 +422,16 @@ GooseLudo.move = function (playerTurn, piece, diceResults) {
     const updatedDiceResults = [0, 0]; // all dice used up
     return [newPos, updatedDiceResults];
 };
+
+/**
+ * Checks if there is another piece at the same position.
+ *
+ * @memberof GooseLudo
+ * @function anotherPieceAtPosition
+ * @param {GooseLudo.Piece} piece - Token to check against.
+ * @param {string} colour - Optional player colour to filter by.
+ * @returns {GooseLudo.Piece[]} The list of pieces at the position.
+ */
 
 GooseLudo.anotherPieceAtPosition = function (piece, colour = undefined) {
     if (colour) {
@@ -503,6 +518,7 @@ GooseLudo.squareEffects = function (playerTurn, piece, newPos) {
  * @memberof GooseLudo
  * @function playerNext
  * @param {number} currentPlayerIndex - Current player index.
+ * @param {string[]} players - List of player colours.
  * @returns {number} The next player's index.
  */
 
@@ -513,7 +529,17 @@ GooseLudo.playerNext = function (currentPlayerIndex, players = []) {
     return GooseLudo.state.currentPlayer;
 };
 
-const updateTurnWait = function (state, currentPlayer) {
+/**
+ * Updates the waiting status for all tokens of the current player.
+ *
+ * @memberof GooseLudo
+ * @function updateTurnWait
+ * @param {Object} state - The game state.
+ * @param {string} currentPlayer - The colour of the current player.
+ * @returns {Object} The updated game state.
+ */
+
+GooseLudo.updateTurnWait = function (state, currentPlayer) {
     state.tokens.forEach((piece) => {
         if (piece.player === currentPlayer && piece.waitTurns > 0) {
             piece.waitTurns -= 1;
@@ -531,6 +557,7 @@ const updateTurnWait = function (state, currentPlayer) {
  *
  * @memberof GooseLudo
  * @function playersTurn
+ * @param {Object} state - The current game state.
  * @returns {state}
  */
 
@@ -569,6 +596,7 @@ GooseLudo.playersTurn = function (state) {
  *
  * @memberof GooseLudo
  * @function isVictory
+ * @param {string[]} players - List of player colours.
  * @returns {boolean} True if a player has won.
  */
 
