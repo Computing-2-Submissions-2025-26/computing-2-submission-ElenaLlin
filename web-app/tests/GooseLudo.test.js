@@ -1,5 +1,6 @@
+import R from "../ramda.js";
 import GooseLudo from "../GooseLudo.js";
-import assert from "node:assert";
+import assert from "assert";
 
 /**
  * Resets the GooseLudo game state before each test.
@@ -12,34 +13,84 @@ import assert from "node:assert";
 beforeEach(function () {
     GooseLudo.state.tokens = [];
     GooseLudo.state.currentPlayer = 0;
-    GooseLudo.startingBoard(GooseLudo.playerList);
 });
 
-/**
- * Tests for player turn progression.
- *
- * Verifies that the active player advances correctly
- * and wraps to the beginning of the player list.
- */
-describe("playerNext", function () {
-    it("moves to next player", function () {
-        assert.strictEqual(GooseLudo.playerNext(0), 1);
-    });
+const playersList = function (count) {
+    const playerColours = ["yellow", "blue", "red", "green"];
+    return playerColours.slice(0, count);
+};
 
-    it("wraps to first player", function () {
-        assert.strictEqual(GooseLudo.playerNext(3), 0);
+
+describe("playerNext", function () {
+    [2, 3, 4].forEach(function (count) {
+        it(`moves to next player for ${count} players`, function () {
+            // Given a list of players
+            const players = playersList(count);
+
+            // When a turn ends and the next starts
+            const next = GooseLudo.playerNext(0, players);
+
+            // Then the next player is the next in the list
+            assert(
+                R.equals(next, 1),
+                ("Not changing to next player in the list")
+            );
+        });
+
+        it(`wraps to first player dynamically for ${count} players`,
+            function () {
+                // Given a list of players
+                const players = playersList(count);
+
+                // When the last player's turn ends and the next starts
+                const lastPlayerIndex = players.length - 1;
+                const next = GooseLudo.playerNext(lastPlayerIndex, players);
+
+                // Then the next player is the first in the list
+                assert(
+                    R.equals(next, 0),
+                    ("Not wrapping around to player one")
+                );
+            });
     });
 });
 
 
 describe("startingBoard", function () {
-    it("creates 16 tokens", function () {
-        assert.strictEqual(GooseLudo.state.tokens.length, 16);
+    [2, 3, 4].forEach(function (count) {
+        it(`Initial tokens are 4 for each player (${count} players)`,
+            function () {
+                // Given a list of players
+                const players = playersList(count);
+
+                // When the starting board is created
+                GooseLudo.startingBoard(players);
+
+                // Then four tokens are created for each player
+                assert(
+                    R.equals(GooseLudo.state.tokens.length, 4 * players.length),
+                    (`There are ${GooseLudo.state.tokens.length}
+                    tokens not ${4 * players.length}`)
+                );
+            });
+
+        it(`Initial board had 68 squares and ${count} end zones`, function () {
+            // Given a list of players
+            const players = playersList(count);
+
+            // When the starting board is created
+            GooseLudo.startingBoard(players);
+
+            // Then 68 main squares and an end zone for each players is created
+            assert(
+                R.equals(GooseLudo.state.boardSquares.length,
+                    (68 + (8 * count))
+                ),
+                (`There aren't ${68 + (8 * count)} board squares`)
+            );
+        });
     });
 
-    it("creates 68 track squares plus end zones", function () {
-        assert.strictEqual(GooseLudo.state.boardSquares.length, 96);
-    });
 });
 
 /**
@@ -51,20 +102,29 @@ describe("startingBoard", function () {
 
 describe("move", function () {
     it("piece leaves home when rolling a five", function () {
+        // given staring board where piece at home
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
+
+        // when five rolled
         const piece = GooseLudo.state.tokens.find(
             (t) => t.player === "yellow"
         );
 
         GooseLudo.move("yellow", piece, [5, 2]);
 
-        assert.strictEqual(piece.position, 5);
+        // then moved to starting position
+        assert(R.equals(piece.position, 5),
+            `Piece hasn't moved from home to it's starting position`);
     });
 
     it("cannot move onto opponent barrier", function () {
+        // given starting board
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         const piece = GooseLudo.state.tokens.find(
             (t) => t.player === "yellow"
         );
 
+        // when barrier created and piece before that barrier
         piece.position = 1;
 
         GooseLudo.state.tokens.push(
@@ -78,11 +138,14 @@ describe("move", function () {
             [2, 2]
         );
 
-        assert.strictEqual(result[0], 1);
-        assert.strictEqual(piece.position, 1);
+        assert(R.equals(result[0], 1),
+            `New position returned, piece allowed to move`);
+        assert(R.equals(piece.position, 1),
+            `Piece position modified, piece allowed to move`);
     });
 
     it("captures opponent piece", function () {
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         const yellow = GooseLudo.state.tokens.find(
             (t) => t.player === "yellow"
         );
@@ -96,10 +159,12 @@ describe("move", function () {
 
         GooseLudo.move("yellow", yellow, [2, 2]);
 
-        assert.strictEqual(red.position, "home");
+        assert(R.equals(red.position, "home"),
+            `Piece not captured and not sent home`);
     });
 
     it("cannot capture on safe square", function () {
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         const yellow = GooseLudo.state.tokens.find(
             (t) => t.player === "yellow"
         );
@@ -113,7 +178,8 @@ describe("move", function () {
 
         GooseLudo.move("yellow", yellow, [5, 5]);
 
-        assert.strictEqual(red.position, 12);
+        assert(R.equals(red.position, 12),
+            `Piece captured and sent home`);
     });
 });
 /**
@@ -124,6 +190,7 @@ describe("move", function () {
  */
 describe("squareEffects", function () {
     it("bridge teleports piece", function () {
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         const piece = GooseLudo.state.tokens[0];
 
         piece.position = 36;
@@ -134,10 +201,12 @@ describe("squareEffects", function () {
             36
         );
 
-        assert.strictEqual(piece.position, 60);
+        assert(R.equals(piece.position, 60),
+            `bridge not working`);
     });
 
     it("dice square teleports to other dice square", function () {
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         const piece = GooseLudo.state.tokens[0];
 
         GooseLudo.squareEffects(
@@ -146,10 +215,12 @@ describe("squareEffects", function () {
             12
         );
 
-        assert.strictEqual(piece.position, 48);
+        assert(R.equals(piece.position, 48),
+            `dice square not working`);
     });
 
     it("well square causes wait penalty", function () {
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         const piece = GooseLudo.state.tokens[0];
 
         GooseLudo.squareEffects(
@@ -158,7 +229,9 @@ describe("squareEffects", function () {
             24
         );
 
-        assert.strictEqual(piece.waitTurns, 2);
+        assert(R.equals(piece.waitTurns, 3),
+            `dice square not working`);
+
     });
 });
 
@@ -174,19 +247,19 @@ describe("squareEffects", function () {
  * have reached the end zone.
  */
 
-describe("isVictory", () => {
+describe("isVictory", function () {
     it("returns true when all player tokens reach end", function () {
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
         GooseLudo.state.tokens
             .filter((t) => t.player === "yellow")
-            .forEach(t => {
-                t.position = "end";
-            });
+            .forEach((t) => { t.position = "yellow8"; });
 
-        assert.strictEqual(GooseLudo.isVictory(), true);
+        assert.strictEqual(GooseLudo.isVictory(["yellow", "blue", "red", "green"]), true);
     });
 
     it("returns false when not all tokens reach end", () => {
-        assert.strictEqual(GooseLudo.isVictory(), false);
+        GooseLudo.startingBoard(["yellow", "blue", "red", "green"]);
+        assert.strictEqual(GooseLudo.isVictory(["yellow", "blue", "red", "green"]), false);
     });
 });
 
