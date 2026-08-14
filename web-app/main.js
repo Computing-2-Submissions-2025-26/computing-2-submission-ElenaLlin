@@ -214,18 +214,21 @@ const createBoardDotElements = function () {
     }
 
     const allBoardCoords = [];
-    Object.values(boardCoords.homePositions).forEach((positions) => {
-        allBoardCoords.push(...positions);
-    });
+    Object.values(boardCoords.homePositions).forEach(
+        (positions) => {
+            allBoardCoords.push(...positions);
+        });
     allBoardCoords.push(...boardCoords.mainPath);
-    Object.values(boardCoords.finalPath).forEach((positions) => {
-        allBoardCoords.push(...positions);
-    });
-    Object.values(boardCoords.endZones).forEach((positions) => {
-        allBoardCoords.push(...positions);
-    });
+    Object.values(boardCoords.finalPath).forEach(
+        (positions) => {
+            allBoardCoords.push(...positions);
+        });
+    Object.values(boardCoords.endZones).forEach(
+        (positions) => {
+            allBoardCoords.push(...positions);
+        });
 
-    allBoardCoords.forEach((coords, index) => {
+    allBoardCoords.forEach(function (coords, index) {
         const dotId = `board-dot-${index}`;
         let dot = dotLayer.querySelector(`#${dotId}`);
         if (!dot) {
@@ -244,6 +247,46 @@ const createBoardDotElements = function () {
     });
 };
 
+const tokenClicked = function (event) {
+    console.log(`click`);
+    const tokenImage = event.currentTarget;
+    const player = tokenImage.dataset.player;
+    const tokenId = Number(tokenImage.dataset.tokenId);
+    const currentPlayer = gameState.currentPlayer;
+
+    if (player !== currentPlayer) {
+        setStatus("Choose a piece for the current player.");
+        return;
+    }
+
+    const piece = GooseLudo.state.tokens.find(
+        (token) => token.player === player && token.id === tokenId
+    );
+    if (!piece) { return; }
+
+    if (R.equals(gameState.diceResults, [0, 0])) {
+        setStatus("Out of moves");
+        setDiceResult(gameState.diceResults);
+        endTurnButton.disabled = false;
+        return;
+    }
+
+    const available = gameState.availableMoves.find(
+        (token) => token.player === piece.player && token.id === piece.id
+    );
+    if (!available) {
+        setStatus("That piece cannot move with the current dice.");
+        return;
+    }
+
+    clearSelection();
+    tokenImage.classList.add("selected");
+    gameState.selectedPiece = piece;
+    setStatus(`Selected piece ${piece.id
+        }. Press End Turn or Roll again after move.`);
+    moveSelectedPiece(piece);
+};
+
 const createTokenElements = function () {
     if (!boardSVG) { return; }
 
@@ -255,7 +298,7 @@ const createTokenElements = function () {
         boardSVG.appendChild(tokenLayer);
     }
 
-    GooseLudo.state.tokens.forEach((token) => {
+    GooseLudo.state.tokens.forEach(function (token) {
         const tokenId = `token-${token.player}-${token.id}`;
         let tokenImage = boardSVG.querySelector(`#${tokenId}`);
         if (!tokenImage) {
@@ -289,7 +332,9 @@ const getTokenCoords = function (token) {
     console.log(token.position.includes(token.player));
 
     if (token.position.includes(token.player)) {
-        return boardCoords.finalPath[token.player][Number(token.position.slice(-1)) - 1];
+        return boardCoords.finalPath[token.player][
+            Number(token.position.slice(-1)) - 1
+        ];
     }
     return { x: 0, y: 0 };
 };
@@ -348,7 +393,7 @@ function loadBoardSVG() {
                     boardSVG.setAttribute("viewBox", "0 0 1172 1172");
                 }
 
-                //createBoardDotElements(); // show coordinates 
+                //createBoardDotElements(); // show coordinates
                 createTokenElements();
                 boardReady = true;
                 renderPieces();
@@ -385,17 +430,17 @@ const gameState = {
 
 // Web text updates
 
-const updateCurrentPlayer = () => {
+const updateCurrentPlayer = function () {
     currentPlayerLabel.textContent = GooseLudo.playerList[
         GooseLudo.state.currentPlayer
     ];
 };
 
-const setStatus = (text) => {
+const setStatus = function (text) {
     statusMessage.textContent = text;
 };
 
-const setDiceResult = (diceResults) => {
+const setDiceResult = function (diceResults) {
     if (!diceResults) {
         diceResultLabel.textContent = "-";
         return;
@@ -405,20 +450,20 @@ const setDiceResult = (diceResults) => {
 
 // Variable updates
 
-const clearSelection = () => {
+const clearSelection = function () {
     gameState.selectedPiece = null;
     boardSVG.querySelectorAll(".token.selected").forEach((node) => {
         node.classList.remove("selected");
     });
 };
 
-const clearSelectable = () => {
+const clearSelectable = function () {
     boardSVG.querySelectorAll(".token.selectable").forEach((node) => {
         node.classList.remove("selectable");
     });
 };
 
-const updateAvailableMoves = () => {
+const updateAvailableMoves = function () {
     availableMovesList.innerHTML = "";
     gameState.availableMoves.forEach((piece) => {
         const item = document.createElement("li");
@@ -429,7 +474,7 @@ const updateAvailableMoves = () => {
 
 // Web visuals updates
 
-const highlightSelectableTokens = () => {
+const highlightSelectableTokens = function () {
     clearSelectable();
     gameState.availableMoves.forEach((piece) => {
         const tokenImage = boardSVG.querySelector(
@@ -441,7 +486,7 @@ const highlightSelectableTokens = () => {
     });
 };
 
-const moveSelectedPiece = (piece) => {
+const moveSelectedPiece = function (piece) {
     if (!gameState.diceResults) {
         return;
     }
@@ -452,7 +497,7 @@ const moveSelectedPiece = (piece) => {
         [...gameState.diceResults]
     );
 
-    if (newPos === piece.position && gameState.diceResults === [0, 0]) {
+    if (newPos === piece.position && R.equals(gameState.diceResults, [0, 0])) {
         setStatus("No more moves");
         return;
     }
@@ -474,7 +519,7 @@ const moveSelectedPiece = (piece) => {
         return;
     }
 
-    if (gameState.diceResults !== [0, 0]) {
+    if (!R.equals(gameState.diceResults, [0, 0])) {
         setStatus("A piece can still be moved");
         setDiceResult(gameState.diceResults);
         // mini function?
@@ -509,47 +554,7 @@ const moveSelectedPiece = (piece) => {
     }
 };
 
-function tokenClicked(event) {
-    console.log(`click`);
-    const tokenImage = event.currentTarget;
-    const player = tokenImage.dataset.player;
-    const tokenId = Number(tokenImage.dataset.tokenId);
-    const currentPlayer = gameState.currentPlayer;
-
-    if (player !== currentPlayer) {
-        setStatus("Choose a piece for the current player.");
-        return;
-    }
-
-    const piece = GooseLudo.state.tokens.find(
-        (token) => token.player === player && token.id === tokenId
-    );
-    if (!piece) return;
-
-    const available = gameState.availableMoves.find(
-        (token) => token.player === piece.player && token.id === piece.id
-    );
-    if (!available) {
-        setStatus("That piece cannot move with the current dice.");
-        return;
-    }
-
-    if (gameState.diceResults === [0, 0]) {
-        setStatus("Out of moves");
-        setDiceResult(gameState.diceResults);
-        endTurnButton.disabled = false;
-        return;
-    }
-
-    clearSelection();
-    tokenImage.classList.add("selected");
-    gameState.selectedPiece = piece;
-    setStatus(`Selected piece ${piece.id
-        }. Press End Turn or Roll again after move.`);
-    moveSelectedPiece(piece);
-}
-
-const handleRoll = () => {
+const handleRoll = function () {
     const currentPlayer = gameState.currentPlayer;
     const [diceResults, rolls, reroll, reason] = GooseLudo.roll(
         currentPlayer, gameState.rolls, gameState.reroll
@@ -566,8 +571,8 @@ const handleRoll = () => {
     gameState.availableMoves = movable;
     updateAvailableMoves();
 
-    if (diceResults === [0, 0] && reason) {
-        setStatus(`Rolled a ${reason} three times, 
+    if (R.equals(diceResults, [0, 0]) && reason) {
+        setStatus(`Rolled a ${reason} three times,
             last moved piece returns home`);
     }
     else if (movable.length === 0) {
@@ -582,8 +587,10 @@ const handleRoll = () => {
     endTurnButton.disabled = false;
 };
 
-const endTurn = () => {
-    const playerIndex = GooseLudo.playerNext(GooseLudo.state.currentPlayer, gameState.players);
+const endTurn = function () {
+    const playerIndex = GooseLudo.playerNext(
+        GooseLudo.state.currentPlayer,
+        gameState.players);
     gameState.rolls = 0;
     gameState.reroll = true;
     gameState.diceResults = [0, 0];
@@ -604,7 +611,7 @@ const endTurn = () => {
     renderPieces();
 };
 
-const initialiseUI = () => {
+const initialiseUI = function () {
     updateCurrentPlayer();
     setStatus("Press Roll to begin.");
     setDiceResult(null);

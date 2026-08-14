@@ -363,7 +363,7 @@ const checkCapture = function (playerTurn, piece, newPos) {
         }
 
         // Check if it's a barrier (2+ opponent pieces)
-        const allTokensAtPos = anotherPieceAtPosition(newPos);
+        const allTokensAtPos = GooseLudo.anotherPieceAtPosition(newPos);
         if (allTokensAtPos.length >= 2) {
             // Barrier - can't capture
             console.log(`barrier`);
